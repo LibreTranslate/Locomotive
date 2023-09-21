@@ -8,6 +8,8 @@ import hashlib
 import zipfile
 import shutil
 from net import download
+from data import merge_shuffle
+import sentencepiece as spm
 
 parser = argparse.ArgumentParser(description='Train LibreTranslate compatible models')
 parser.add_argument('--config',
@@ -24,11 +26,23 @@ except Exception as e:
     exit(1)
 
 print(f"Training {config['from']['name']} --> {config['to']['name']} ({config['version']})")
-print(f"Data sources: {len(config['sources'])}")
+print(f"Sources: {len(config['sources'])}")
 
+metadata = {
+    "package_version": config['version'],
+    "argos_version": "1.5",
+    "from_code": config['from']['code'],
+    "from_name": config['from']['name'],
+    "to_code": config['to']['code'],
+    "to_name": config['to']['name'],
+}
+readme = f"# {config['from']['name']} - {config['to']['name']} version {config['version']}"
 
 current_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(current_dir, "cache")
+model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
+run_dir = os.path.join(current_dir, "run", model_dirname)
+#rel_run_dir = f"run/{model_dirname}"
 os.makedirs(cache_dir, exist_ok=True)
 
 
@@ -80,8 +94,14 @@ for s in config['sources']:
 for k in sources:
     print(f" - {k} ({sources[k]['hash']})")
 
-spm_train_exe = shutil.which("spm_train")
-if spm_train_exe is None:
-    if sys.platform == 'win32':
-        download("")
-# TODO: check spm binaries on Windows
+
+os.makedirs(run_dir, exist_ok=True)
+merge_shuffle(sources, run_dir)
+
+# TODO: run sentencepiece
+# TODO: generate config.yml from template
+# TODO: run generate vocab
+# TODO: run opennmt-py
+# TODO: run stanza
+# TODO: package, ship
+# TODO: support for files rather than URLs
