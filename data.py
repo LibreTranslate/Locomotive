@@ -1,9 +1,22 @@
 import random
 import os
+import hashlib
 
 def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
+    merge_hash_file = os.path.join(out_dir, "merge-hash.txt")
+    sources_hash = hashlib.md5("|".join(sorted([k for k in sources])).encode('utf-8')).hexdigest()
+
+    if os.path.isfile(merge_hash_file):
+        with open(merge_hash_file, "r", encoding="utf-8") as f:
+            merge_hash = f.readline().strip()
+            if merge_hash == sources_hash:
+                print("Skipping merge shuffle, no changes in sources")
+                return
+    else:
+        with open(merge_hash_file, "w", encoding="utf-8") as f:
+            f.write(sources_hash)
+
     data = []
-    print(sources)
     for k in sources:
         source = sources[k]['source']
         target = sources[k]['target']
