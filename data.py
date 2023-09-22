@@ -11,17 +11,17 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
             merge_hash = f.readline().strip()
             if merge_hash == sources_hash:
                 print("Skipping merge shuffle, no changes in sources")
-                return
-    else:
-        with open(merge_hash_file, "w", encoding="utf-8") as f:
-            f.write(sources_hash)
+                return False
+
+    with open(merge_hash_file, "w", encoding="utf-8") as f:
+        f.write(sources_hash)
 
     data = []
     for k in sources:
         source = sources[k]['source']
         target = sources[k]['target']
         
-        print(f"Reading {os.path.basename(source)} - {os.path.basename(target)}")
+        print(f"Reading {source} - {target}")
         with open(source, "r", encoding="utf-8") as fs, \
              open(target, "r", encoding="utf-8") as ft:
              while True:
@@ -30,7 +30,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 if not line_s or not line_t:
                     break
                 data.append((line_s, line_t))
-        print(f"Sentences: {len(data)}")
+        print(f"New sentence count: {len(data)}")
     
     print("Shuffling")
     random.shuffle(data)
@@ -58,6 +58,8 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 ftt.write(target)
 
             count += 1
+    
+    return True
     
 
         
