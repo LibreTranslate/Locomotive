@@ -23,6 +23,10 @@ parser.add_argument('--config',
     type=str,
     default="model-config.json",
     help='Path to model-config.json. Default: %(default)s')
+parser.add_argument('--reverse',
+    action='store_true',
+    help='Reverse the source and target languages in the configuration and data sources. Default: %(default)s')
+    
 parser.add_argument('--toy',
     action='store_true',
     help='Train a toy model (useful for testing). Default: %(default)s')
@@ -30,6 +34,9 @@ args = parser.parse_args()
 try:
     with open(args.config) as f:
         config = json.loads(f.read())
+    
+    if args.reverse:
+        config["from"], config["to"] = config["to"], config["from"]
 except Exception as e:
     print(f"Cannot open config file: {e}")
     exit(1)
@@ -70,6 +77,8 @@ for s in config['sources']:
                 source = f
             
         if source is not None and target is not None:
+            if args.reverse:
+                source, target = target, source
             sources[s] = {
                 'source': source,
                 'target': target,
@@ -115,6 +124,8 @@ for s in config['sources']:
                     source = f
                 
             if source is not None and target is not None:
+                if args.reverse:
+                    source, target = target, source
                 sources[s] = {
                     'source': source,
                     'target': target,

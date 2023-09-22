@@ -79,6 +79,14 @@ python train.py --config config.json
 
 Training can take a while and depending on the size of datasets can require a graphics card with lots of memory.
 
+### Reverse Training
+
+Once you have trained a model from `source => target`, you can easily train a reverse model `target => source` model by passing `--reverse`:
+
+```bash
+python train.py --config config.json --reverse
+```
+
 ## Evaluate
 
 You can evaluate the model by running:
@@ -100,7 +108,7 @@ BLEU score: 45.12354
 
 ## Contribute
 
-Want to share your model with the world? Post it on [community.libretranslate.com](https://community.libretranslate.com) and we'll include in future releases of LibreTranslate.
+Want to share your model with the world? Post it on [community.libretranslate.com](https://community.libretranslate.com) and we'll include in future releases of LibreTranslate. Make sure to share both a forward and reverse model (e.g. `en => es` and `es => en`), otherwise we won't be able to include it in the model repository.
 
 ## Use with LibreTranslate
 
