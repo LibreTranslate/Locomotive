@@ -39,6 +39,8 @@ Adiós
 
 You'll need a few million sentences to train decent models, and at least ~100k sentences to get some results. [OPUS](https://opus.nlpl.eu/) has a good collection of datasets to get started. You can also use any of the data sources listed on the [argos-train index](https://github.com/argosopentech/argos-train/blob/master/data-index.json).
 
+## Usage
+
 Place `source.txt` and `target.txt` files in a folder (e.g. `mydataset-en_es`) of your choice:
 
 ```bash
@@ -46,8 +48,6 @@ mydataset-en_es/
 ├── source.txt
 └── target.txt
 ```
-
-## Usage
 
 Create a `config.json` file specifying your sources:
 
