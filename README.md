@@ -79,6 +79,8 @@ python train.py --config config.json
 
 Training can take a while and depending on the size of datasets can require a graphics card with lots of memory.
 
+The output will be saved in `run/[model]/translate-[from]_[to]-[version].argosmodel`.
+
 ### Reverse Training
 
 Once you have trained a model from `source => target`, you can easily train a reverse model `target => source` model by passing `--reverse`:
