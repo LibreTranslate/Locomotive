@@ -26,7 +26,9 @@ parser.add_argument('--config',
 parser.add_argument('--reverse',
     action='store_true',
     help='Reverse the source and target languages in the configuration and data sources. Default: %(default)s')
-    
+parser.add_argument('--rerun',
+    action='store_true',
+    help='Rerun the training from scratch. Default: %(default)s')
 parser.add_argument('--toy',
     action='store_true',
     help='Train a toy model (useful for testing). Default: %(default)s')
@@ -64,6 +66,9 @@ rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
 
+if args.rerun:
+    shutil.rmtree(run_dir)
+
 sources = {}
 
 for s in config['sources']:
@@ -93,12 +98,24 @@ for s in config['sources']:
         zip_path = dataset_path + ".zip"
 
         if not os.path.isdir(dataset_path):
-            if not os.path.isfile(zip_path):
+            def download_source():
                 def print_progress(progress):
-                    print(f"\r{os.path.basename(dataset_path)} [{int(progress)}%]     ", end='\r')
+                    print(f"\r{s} [{int(progress)}%]     ", end='\r')
                 
                 download(s, cache_dir, progress_callback=print_progress, basename=os.path.basename(zip_path))
                 print()
+
+            if not os.path.isfile(zip_path):
+                download_source()
+            else:
+                # Quick check
+                try:
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        pass
+                except:
+                    print(f"Corrupted .zip file, redownloading {zip_path}")
+                    os.unlink(zip_path)
+                    download_source()
 
             os.makedirs(dataset_path, exist_ok=True)
             print(f"Extracting {zip_path} to {dataset_path}")
@@ -132,7 +149,7 @@ for s in config['sources']:
                     'hash': md5
                 }
             else:
-                print(f"Cannot find a source.txt and a target.txt in {s}. Exiting...")
+                print(f"Cannot find a source.txt and a target.txt in {s} ({dataset_path}). Exiting...")
                 exit(1)
 
 for k in sources:
