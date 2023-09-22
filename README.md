@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Background
 
-Language models can be trained by providing translation lots of examples from a source language to a target language. All you need to get started is a set of two files (`source` and `target`). The source file containing sentences written in the source language and a corresponding file with sentences written in the target language.
+Language models can be trained by providing lots of example translations from a source language to a target language. All you need to get started is a set of two files (`source` and `target`). The source file containing sentences written in the source language and a corresponding file with sentences written in the target language.
 
 For example:
 
