@@ -310,7 +310,7 @@ if os.path.isfile(package_file):
     os.unlink(package_file)
 
 print(f"Writing {package_file}")
-with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_LZMA, compresslevel=6) as zipf:
+with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_STORED) as zipf:
     def add_file(f):
         zipf.write(f, arcname=os.path.basename(f))
 
