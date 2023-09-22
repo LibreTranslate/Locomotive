@@ -95,7 +95,7 @@ for s in config['sources']:
         if not os.path.isdir(dataset_path):
             if not os.path.isfile(zip_path):
                 def print_progress(progress):
-                    print(f"\r{os.path.basename(zip_path)} [{int(progress)}%]     ", end='\r')
+                    print(f"\r{os.path.basename(dataset_path)} [{int(progress)}%]     ", end='\r')
                 
                 download(s, cache_dir, progress_callback=print_progress, basename=os.path.basename(zip_path))
                 print()
