@@ -1,5 +1,5 @@
 --find-links https://download.pytorch.org/whl/cu117/torch_stable.html
-torch+cu117==2.0.1
+torch==2.0.1+cu117
 ctranslate2==2.24.0
 stanza==1.1.1
 sentencepiece==0.1.99
