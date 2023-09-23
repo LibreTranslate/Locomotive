@@ -187,9 +187,7 @@ if not os.path.isfile(sp_model_path) or changed:
         except Exception as e:
             err = str(e)
             if "Vocabulary size too high" in err:
-                print(err)
                 matches = re.match(".*Please set it to a value <= (\d+)", err)
-                print(matches)
                 if matches is not None:
                     config["vocab_size"] = int(matches.group(1))
                     print(f"WARNING: vocabulary size too high, reducing to {matches.group(1)}")
