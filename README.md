@@ -10,7 +10,7 @@ Easy to use, cross-platform toolkit to train [argos-translate](https://github.co
 ## Install
 
 ```bash
-git clone https://github.com/LibreTranslate/Locomotive --recurse-submodules
+git clone https://github.com/LibreTranslate/Locomotive --depth 1
 cd Locomotive
 pip install -r requirements.txt
 ```
