@@ -13,6 +13,7 @@ import subprocess
 import stanza
 import re
 import zipfile
+import ctranslate2
 from net import download
 from data import merge_shuffle
 import sentencepiece as spm
@@ -257,6 +258,11 @@ onmt_config = {
     'share_decoder_embeddings': True, 
     'share_embeddings': True
 }
+
+no_gpu = ctranslate2.get_cuda_device_count() == 0
+if sys.platform == 'darwin' or no_gpu:
+    # CPU
+    del onmt_config['gpu_ranks']
 
 if args.toy:
     toy_config = {
