@@ -73,9 +73,10 @@ sources = {}
 
 for s in config['sources']:
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
-    if s.lower().startswith("file://"):
+    
+    def add_source_from(dir):
         source, target = None, None
-        for f in [f.path for f in os.scandir(s[7:]) if f.is_file()]:
+        for f in [f.path for f in os.scandir(dir) if f.is_file()]:
             if "target" in f.lower():
                 target = f
             if "source" in f.lower():
@@ -90,13 +91,17 @@ for s in config['sources']:
                 'hash': md5
             }
         else:
-            print(f"Cannot find a source.txt and a target.txt in {s}. Exiting...")
+            print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
             exit(1)
+
+    if s.lower().startswith("file://"):
+        add_source_from(s[7:])
     else:
         # Network URL
         dataset_path = os.path.join(cache_dir, md5)
         zip_path = dataset_path + ".zip"
 
+        # Download first?
         if not os.path.isdir(dataset_path):
             def download_source():
                 def print_progress(progress):
@@ -131,26 +136,8 @@ for s in config['sources']:
                     shutil.move(f, dataset_path)
                 
                 shutil.rmtree(subfolders[0])
-            
-        # Find source, target files
-        source, target = None, None
-        for f in [f.path for f in os.scandir(dataset_path) if f.is_file()]:
-            if "target" in f.lower():
-                target = f
-            if "source" in f.lower():
-                source = f
-            
-        if source is not None and target is not None:
-            if args.reverse:
-                source, target = target, source
-            sources[s] = {
-                'source': source,
-                'target': target,
-                'hash': md5
-            }
-        else:
-            print(f"Cannot find a source.txt and a target.txt in {s} ({dataset_path}). Exiting...")
-            exit(1)
+        
+        add_source_from(dataset_path)
 
 for k in sources:
     print(f" - {k} ({sources[k]['hash']})")
