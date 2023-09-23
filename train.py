@@ -14,6 +14,7 @@ import stanza
 import re
 import zipfile
 import ctranslate2
+import signal
 from net import download
 from data import merge_shuffle
 import sentencepiece as spm
@@ -46,6 +47,10 @@ try:
 except Exception as e:
     print(f"Cannot open config file: {e}")
     exit(1)
+
+def handler(signum, frame):
+    exit(0) 
+signal.signal(signal.SIGINT, handler)
 
 print(f"Training {config['from']['name']} --> {config['to']['name']} ({config['version']})")
 print(f"Sources: {len(config['sources'])}")
