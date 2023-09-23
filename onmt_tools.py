@@ -1,5 +1,9 @@
 import torch
 
+# From: https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/bin/average_models.py
+# MIT licensed
+# Copyright (c) 2017-Present OpenNMT
+
 def average_models(model_files, output, fp32=False):
     vocab = None
     opt = None
