@@ -17,6 +17,11 @@ parser.add_argument('--reverse',
 parser.add_argument('--bleu',
     action="store_true",
     help='Evaluate BLEU score. Default: %(default)s')
+parser.add_argument('--bleu-id',
+    type=int,
+    default=None,
+    help='Evaluate this BLEU sentence ID. Default: %(default)s')
+
 
 args = parser.parse_args()
 try:
@@ -53,7 +58,7 @@ def decode(tokens, tokenizer):
 
 data = translator()
 
-if args.bleu:
+if args.bleu or args.bleu_id is not None:
     flores_dataset = os.path.join(cache_dir, "flores200_dataset", "dev")
 
     if not os.path.isdir(flores_dataset):
@@ -208,6 +213,10 @@ if args.bleu:
     src_text = [line.rstrip('\n') for line in open(src_f, encoding="utf-8")]
     tgt_text = [line.rstrip('\n') for line in open(tgt_f, encoding="utf-8")]
     
+    if args.bleu_id is not None:
+        src_text = [src_text[args.bleu_id]]
+        tgt_text = [tgt_text[args.bleu_id]]
+
     translation_obj = data["model"].translate_batch(
         encode(src_text, data["tokenizer"]),
         beam_size=4, # same as argos
@@ -223,7 +232,10 @@ if args.bleu:
         translated_text, [[x] for x in tgt_text], tokenize="flores200"
     ).score, 5)
 
-    print(f"BLEU score: {bleu_score}")
+    if args.bleu_id is not None:
+        print(f"({config['from']['code']})> {src_text[0]}\n(gt)> {tgt_text[0]}\n({config['to']['code']})> {' '.join(translated_text)}")
+    else:
+        print(f"BLEU score: {bleu_score}")
 else:
     # Interactive mode
     print("Starting interactive mode")
