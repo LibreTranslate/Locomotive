@@ -93,8 +93,8 @@ for s in config['sources']:
             print(f"Cannot find a source.txt and a target.txt in {s}. Exiting...")
             exit(1)
     else:
-        dataset_path = os.path.join(cache_dir, md5)
         # Network URL
+        dataset_path = os.path.join(cache_dir, md5)
         zip_path = dataset_path + ".zip"
 
         if not os.path.isdir(dataset_path):
@@ -123,7 +123,7 @@ for s in config['sources']:
                 zip_ref.extractall(dataset_path)
             
             os.unlink(zip_path)
-        else:
+        
             subfolders = [ f.path for f in os.scandir(dataset_path) if f.is_dir()]
             if len(subfolders) == 1:
                 # Move files from subfolder
@@ -132,25 +132,25 @@ for s in config['sources']:
                 
                 shutil.rmtree(subfolders[0])
             
-            # Find source, target files
-            source, target = None, None
-            for f in [f.path for f in os.scandir(dataset_path) if f.is_file()]:
-                if "target" in f.lower():
-                    target = f
-                if "source" in f.lower():
-                    source = f
-                
-            if source is not None and target is not None:
-                if args.reverse:
-                    source, target = target, source
-                sources[s] = {
-                    'source': source,
-                    'target': target,
-                    'hash': md5
-                }
-            else:
-                print(f"Cannot find a source.txt and a target.txt in {s} ({dataset_path}). Exiting...")
-                exit(1)
+        # Find source, target files
+        source, target = None, None
+        for f in [f.path for f in os.scandir(dataset_path) if f.is_file()]:
+            if "target" in f.lower():
+                target = f
+            if "source" in f.lower():
+                source = f
+            
+        if source is not None and target is not None:
+            if args.reverse:
+                source, target = target, source
+            sources[s] = {
+                'source': source,
+                'target': target,
+                'hash': md5
+            }
+        else:
+            print(f"Cannot find a source.txt and a target.txt in {s} ({dataset_path}). Exiting...")
+            exit(1)
 
 for k in sources:
     print(f" - {k} ({sources[k]['hash']})")
