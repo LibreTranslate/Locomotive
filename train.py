@@ -293,6 +293,10 @@ average_checkpoint = os.path.join(run_dir, "averaged.pt")
 checkpoints = sorted(glob.glob(os.path.join(onmt_dir, "*.pt")))
 print(f"Total checkpoints: {len(checkpoints)}")
 
+if len(checkpoints) == 0:
+    print("Something went wrong, looks like onmt_train failed?")
+    exit(1)
+
 if not os.path.isfile(average_checkpoint):
     average_models(checkpoints[-2:], average_checkpoint)
 
