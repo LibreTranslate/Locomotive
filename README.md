@@ -51,7 +51,7 @@ mydataset-en_es/
 
 Create a `config.json` file specifying your sources:
 
-```
+```json
 {
     "from": {
         "name": "English",
@@ -87,6 +87,37 @@ Once you have trained a model from `source => target`, you can easily train a re
 
 ```bash
 python train.py --config config.json --reverse
+```
+
+### Tensorboard
+
+TensorBoard allows tracking and visualizing metrics such as loss and accuracy, visualizing the model graph and other features. You can enable tensorboard with the `--tensorboard` option:
+
+```bash
+python train.py --config config.json --tensorboard
+```
+
+### Tuning
+
+The model is generated using sensible default values. You can override the [default configuration](https://github.com/LibreTranslate/Locomotive/blob/main/train.py#L191) by adding values directly to your `config.json`. For example, to use a smaller dictionary size, add a `vocab_size` key in `config.json`:
+
+```json
+{
+    "from": {
+        "name": "English",
+        "code": "en"
+    },
+    "to": {
+        "name": "Spanish",
+        "code": "es"
+    },
+    "version": "1.0",
+    "sources": [
+        "file://D:\\path\\to\\mydataset-en_es",
+        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata",
+    ],
+    "vocab_size": 30000
+}
 ```
 
 ## Evaluate

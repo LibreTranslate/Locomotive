@@ -30,6 +30,9 @@ parser.add_argument('--reverse',
 parser.add_argument('--rerun',
     action='store_true',
     help='Rerun the training from scratch. Default: %(default)s')
+parser.add_argument('--tensorboard',
+    action='store_true',
+    help='Run tensorboard during training. Default: %(default)s')
 parser.add_argument('--toy',
     action='store_true',
     help='Train a toy model (useful for testing). Default: %(default)s')
@@ -292,7 +295,29 @@ if not os.path.isfile(onmt_vocab_file):
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
 if not os.path.isfile(last_checkpoint):
-    subprocess.run(["onmt_train", "-config", onmt_config_path])
+    cmd = ["onmt_train", "-config", onmt_config_path]
+    if args.tensorboard:
+        print("Launching tensorboard")
+
+        from tensorboard import program
+        import webbrowser
+        import mimetypes
+
+        log_dir = os.path.join(onmt_dir, "logs")
+        
+        # Allow tensorboard to run on Windows due to mimetypes bug: https://github.com/microsoft/vscode-python/pull/16203
+        mimetypes.add_type("application/javascript", ".js")
+
+        tb = program.TensorBoard()
+        tb.configure(argv=[None, '--logdir', os.path.abspath(log_dir)])
+        url = tb.launch()
+        print(f"Tensorboard URL: {url}")
+        webbrowser.open(url)
+
+        cmd += ["--tensorboard", "--tensorboard_log_dir", log_dir]
+
+    subprocess.run(cmd)
+
 
 # Average
 average_checkpoint = os.path.join(run_dir, "averaged.pt")
