@@ -37,6 +37,9 @@ parser.add_argument('--tensorboard',
 parser.add_argument('--toy',
     action='store_true',
     help='Train a toy model (useful for testing). Default: %(default)s')
+parser.add_argument('--inflight',
+    action='store_true',
+    help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
 args = parser.parse_args() 
 try:
     with open(args.config) as f:
@@ -299,7 +302,7 @@ if not os.path.isfile(onmt_vocab_file):
     subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1"])
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
-if not os.path.isfile(last_checkpoint):
+if not (os.path.isfile(last_checkpoint) or args.inflight):
     cmd = ["onmt_train", "-config", onmt_config_path]
     if args.tensorboard:
         print("Launching tensorboard")
@@ -333,21 +336,25 @@ if len(checkpoints) == 0:
     print("Something went wrong, looks like onmt_train failed?")
     exit(1)
 
-if not os.path.isfile(average_checkpoint):
-    average_models(checkpoints[-2:], average_checkpoint)
+if os.path.isfile(average_checkpoint):
+    os.unlink(average_checkpoint)
+print("Averaging models")
+average_models(checkpoints[-2:], average_checkpoint)
 
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")
-if not os.path.isdir(ct2_model_dir):
-    print("Converting to ctranslate2")
-    subprocess.run([
-            "ct2-opennmt-py-converter",
-            "--model_path",
-            average_checkpoint,
-            "--output_dir",
-            ct2_model_dir,
-            "--quantization",
-            "int8"])
+if os.path.isdir(ct2_model_dir):
+    shutil.rmtree(ct2_model_dir)
+
+print("Converting to ctranslate2")
+subprocess.run([
+        "ct2-opennmt-py-converter",
+        "--model_path",
+        average_checkpoint,
+        "--output_dir",
+        ct2_model_dir,
+        "--quantization",
+        "int8"])
 
 # Package
 readme_file = os.path.join(run_dir, "README.md")
