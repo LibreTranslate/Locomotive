@@ -354,9 +354,9 @@ if len(checkpoints) == 0:
 if os.path.isfile(average_checkpoint):
     os.unlink(average_checkpoint)
 
-if len(checkpoints) == 1:
+if len(checkpoints) == 1 or args.inflight:
     print("Single checkpoint")
-    shutil.copy(checkpoints[0], average_checkpoint)
+    shutil.copy(checkpoints[-1], average_checkpoint)
 else:
     if config.get('avg_checkpoints', 10) == 1:
         print("Averaging 1 model")
