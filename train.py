@@ -207,24 +207,26 @@ onmt_config = {
             'path_src': f'{rel_run_dir}/src-train.txt', 
             'path_tgt': f'{rel_run_dir}/tgt-train.txt', 
             'weight': 1,
-            'transforms': ['onmt_tokenize', 'filtertoolong']
+            'transforms': ['onmt_tokenize', 'filtertoolong', 'suffix'],
+            'src_suffix': '</s>',
+            'tgt_suffix': '</s>'
         }, 
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-            'transforms': ['onmt_tokenize', 'filtertoolong']
+            'transforms': ['onmt_tokenize', 'filtertoolong', 'suffix'],
+            'src_suffix': '</s>',
+            'tgt_suffix': '</s>'
         }
     }, 
     'src_subword_type': 'sentencepiece',
     'tgt_subword_type': 'sentencepiece',
     'src_onmttok_kwargs': {
         'mode': 'none',
-        # 'vocabulary_path': f'{rel_run_dir}/sentencepiece.vocab',
         'lang': config['from']['code'],
     },
     'tgt_onmttok_kwargs': {
         'mode': 'none',
-        # 'vocabulary_path': f'{rel_run_dir}/sentencepiece.vocab',
         'lang': config['to']['code'],
     },
     'src_subword_model': f'{rel_run_dir}/sentencepiece.model', 
@@ -233,8 +235,8 @@ onmt_config = {
     'src_subword_alpha': 0.1, 
     'tgt_subword_nbest': 64, 
     'tgt_subword_alpha': 0.1, 
-    'src_seq_length': 150, 
-    'tgt_seq_length': 150, 
+    'src_seq_length': 192, 
+    'tgt_seq_length': 192, 
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
     'save_checkpoint_steps': 1000, 
