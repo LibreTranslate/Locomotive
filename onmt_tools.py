@@ -1,6 +1,9 @@
 import torch
+import sys
+import math
+from onmt.constants import DefaultTokens
 
-# From: https://github.com/OpenNMT/OpenNMT-py/blob/master/onmt/bin/average_models.py
+# From: https://github.com/OpenNMT/OpenNMT-py
 # MIT licensed
 # Copyright (c) 2017-Present OpenNMT
 
@@ -37,3 +40,17 @@ def average_models(model_files, output, fp32=False):
     
     torch.save(final, output)
 
+
+def sp_vocab_to_onmt_vocab(sp_vocab, onmt_vocab):
+    print(f"Converting {sp_vocab}")
+    with open(sp_vocab, 'r', encoding="utf-8") as fin:
+        with open(onmt_vocab, 'w', encoding="utf-8") as fout:
+            OMIT = (DefaultTokens.UNK, DefaultTokens.BOS, DefaultTokens.EOS)
+            for line in fin:
+                w, c = line.rstrip("\n").split(None, 1)
+                if w in OMIT:
+                    continue
+                c = math.exp(float(c)) * 1000000
+                c = int(c) + 1
+                fout.write(f'{w}\t{c}\n')
+    print(f"Wrote {onmt_vocab}")
