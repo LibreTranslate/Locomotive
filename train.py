@@ -207,16 +207,12 @@ onmt_config = {
             'path_src': f'{rel_run_dir}/src-train.txt', 
             'path_tgt': f'{rel_run_dir}/tgt-train.txt', 
             'weight': 1,
-            'transforms': ['onmt_tokenize', 'filtertoolong', 'suffix'],
-            'src_suffix': '</s>',
-            'tgt_suffix': '</s>'
-        }, 
+            'transforms': ['onmt_tokenize', 'filtertoolong']
+        },
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-            'transforms': ['onmt_tokenize', 'filtertoolong', 'suffix'],
-            'src_suffix': '</s>',
-            'tgt_suffix': '</s>'
+            'transforms': ['onmt_tokenize', 'filtertoolong']
         }
     }, 
     'src_subword_type': 'sentencepiece',
@@ -253,7 +249,7 @@ onmt_config = {
     'max_generator_batches': 2, 
     'accum_count': [4], 
     'accum_steps': [0], 
-    'model_dtype': 'fp32', 
+    'model_dtype': 'fp16', 
     'optim': 'adam', 
     'learning_rate': 2, 
     'warmup_steps': 8000, 
@@ -311,7 +307,6 @@ if changed and os.path.isfile(onmt_vocab_file):
     os.unlink(onmt_vocab_file)
     
 if not os.path.isfile(onmt_vocab_file):
-    # subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", str(config.get('input_sentence_size', 1000000)), "-num_threads", str(os.cpu_count())])
     sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
