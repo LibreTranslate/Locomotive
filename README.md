@@ -81,6 +81,29 @@ Training can take a while and depending on the size of datasets can require a gr
 
 The output will be saved in `run/[model]/translate-[from]_[to]-[version].argosmodel`.
 
+### Running out of memory
+
+If you're running out of CUDA memory, decrease the `batch_size` parameter, which by default is set to `8192`:
+
+```json
+{
+    "from": {
+        "name": "English",
+        "code": "en"
+    },
+    "to": {
+        "name": "Spanish",
+        "code": "es"
+    },
+    "version": "1.0",
+    "sources": [
+        "file://D:\\path\\to\\mydataset-en_es",
+        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata",
+    ],
+    "batch_size": 2048
+}
+```
+
 ### Reverse Training
 
 Once you have trained a model from `source => target`, you can easily train a reverse model `target => source` model by passing `--reverse`:

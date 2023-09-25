@@ -174,7 +174,7 @@ if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
             spm.SentencePieceTrainer.train(input=glob.glob(f"{run_dir}/*-val.txt") + glob.glob(f"{run_dir}/*-train.txt"), 
-                                            model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
+                                            model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 53248),
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True)
@@ -199,8 +199,8 @@ onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'tgt_vocab': f"{rel_onmt_dir}/openmt.vocab",
-    'src_vocab_size': config.get('vocab_size', 50000),
-    'tgt_vocab_size': config.get('vocab_size', 50000),
+    'src_vocab_size': config.get('vocab_size', 53248),
+    'tgt_vocab_size': config.get('vocab_size', 53248),
     'share_vocab': True, 
     'data': {
         'corpus_1': {
@@ -227,10 +227,10 @@ onmt_config = {
     },
     'src_subword_model': f'{rel_run_dir}/sentencepiece.model', 
     'tgt_subword_model': f'{rel_run_dir}/sentencepiece.model', 
-    'src_subword_nbest': 64, 
-    'src_subword_alpha': 0.1, 
-    'tgt_subword_nbest': 64, 
-    'tgt_subword_alpha': 0.1, 
+    'src_subword_nbest': 1, 
+    'src_subword_alpha': 0, 
+    'tgt_subword_nbest': 1, 
+    'tgt_subword_alpha': 0, 
     'src_seq_length': 192, 
     'tgt_seq_length': 192, 
     'skip_empty_level': 'silent', 
@@ -239,13 +239,11 @@ onmt_config = {
     'valid_steps': 5000, 
     'train_steps': 50000, 
     'early_stopping': 4, 
-    'queue_size': 10000, 
     'bucket_size': 262144, 
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
     'batch_size': 8192, 
-    'valid_batch_size': 4096, 
     'max_generator_batches': 2, 
     'accum_count': [4], 
     'accum_steps': [0], 
@@ -271,7 +269,7 @@ onmt_config = {
     'word_vec_size': 512, 
     'transformer_ff': 2048, 
     'dropout_steps': [0],
-    'dropout': [0.1], 
+    'dropout': [0.1],
     'attention_dropout': [0.1], 
     'share_decoder_embeddings': True, 
     'share_embeddings': True
@@ -295,6 +293,9 @@ if args.toy:
 for k in onmt_config:
     if k in config:
         onmt_config[k] = config[k]
+
+# Dependent variables
+onmt_config['valid_batch_size'] = onmt_config['batch_size'] // 2
 
 onmt_config_path = os.path.join(run_dir, "config.yml")
 with open(onmt_config_path, "w", encoding="utf-8") as f:
@@ -331,6 +332,12 @@ if not (os.path.isfile(last_checkpoint) or args.inflight):
         webbrowser.open(url)
 
         cmd += ["--tensorboard", "--tensorboard_log_dir", log_dir]
+    
+    # Resume?
+    checkpoints = sorted(glob.glob(os.path.join(onmt_dir, "*.pt")))
+    if len(checkpoints) > 0:
+        print(f"Resuming from {checkpoints[-1]}")
+        cmd += ["--train_from", checkpoints[-1]]
 
     subprocess.run(cmd)
 
@@ -351,9 +358,13 @@ if len(checkpoints) == 1:
     print("Single checkpoint")
     shutil.copy(checkpoints[0], average_checkpoint)
 else:
-    avg_num = min(config.get('avg_checkpoints', 10), len(checkpoints))
-    print(f"Averaging {avg_num} models")
-    average_models(checkpoints[-avg_num:], average_checkpoint)
+    if config.get('avg_checkpoints', 10) == 1:
+        print("Averaging 1 model")
+        shutil.copy(checkpoints[-1], average_checkpoint)
+    else:
+        avg_num = min(config.get('avg_checkpoints', 10), len(checkpoints))
+        print(f"Averaging {avg_num} models")
+        average_models(checkpoints[-avg_num:], average_checkpoint)
 
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")
