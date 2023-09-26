@@ -74,7 +74,7 @@ rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
 
-if args.rerun:
+if args.rerun and os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
 
 sources = {}
