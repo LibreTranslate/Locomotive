@@ -174,6 +174,16 @@ To install the resulting .argosmodel file, locate the `~/.local/share/argos-tran
 
 Extract the contents of the .argosmodel file (which is just a .zip file, you might need to change the extension to .zip) into this folder. Then restart LibreTranslate.
 
+## Credits
+
+In no particular order, we'd like to thank:
+
+ * [OpenNMT-py](https://github.com/OpenNMT/OpenNMT-py)
+ * [SentencePiece](https://github.com/google/sentencepiece)
+ * [Stanza](https://github.com/stanfordnlp/stanza)
+
+For making Locomotive possible.
+
 ## License
 
 AGPLv3
