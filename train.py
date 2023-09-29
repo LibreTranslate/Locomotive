@@ -174,7 +174,7 @@ if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
             spm.SentencePieceTrainer.train(input=glob.glob(f"{run_dir}/*-val.txt") + glob.glob(f"{run_dir}/*-train.txt"), 
-                                            model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 53248),
+                                            model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True)
@@ -199,20 +199,22 @@ onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'tgt_vocab': f"{rel_onmt_dir}/openmt.vocab",
-    'src_vocab_size': config.get('vocab_size', 53248),
-    'tgt_vocab_size': config.get('vocab_size', 53248),
+    'src_vocab_size': config.get('vocab_size', 50000),
+    'tgt_vocab_size': config.get('vocab_size', 50000),
     'share_vocab': True, 
     'data': {
         'corpus_1': {
             'path_src': f'{rel_run_dir}/src-train.txt', 
             'path_tgt': f'{rel_run_dir}/tgt-train.txt', 
             'weight': 1,
-            'transforms': ['onmt_tokenize', 'filtertoolong']
+            'transforms': ['sentencepiece', 'filtertoolong']
+            #'transforms': ['onmt_tokenize', 'filtertoolong']
         },
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-            'transforms': ['onmt_tokenize', 'filtertoolong']
+            'transforms': ['sentencepiece', 'filtertoolong']
+            #'transforms': ['onmt_tokenize', 'filtertoolong']
         }
     }, 
     'src_subword_type': 'sentencepiece',
@@ -231,8 +233,8 @@ onmt_config = {
     'src_subword_alpha': 0, 
     'tgt_subword_nbest': 1, 
     'tgt_subword_alpha': 0, 
-    'src_seq_length': 192, 
-    'tgt_seq_length': 192, 
+    'src_seq_length': 150, 
+    'tgt_seq_length': 150, 
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
     'save_checkpoint_steps': 1000, 
@@ -243,11 +245,12 @@ onmt_config = {
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
+    'queue_size': 10000,
     'batch_size': 8192, 
     'max_generator_batches': 2, 
     'accum_count': [4], 
     'accum_steps': [0], 
-    'model_dtype': 'fp16', 
+    'model_dtype': 'fp32', 
     'optim': 'adam', 
     'learning_rate': 2, 
     'warmup_steps': 8000, 
@@ -261,10 +264,11 @@ onmt_config = {
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
     'position_encoding': True, 
-    'enc_layers': 10, 
-    'dec_layers': 10,
+    'enc_layers': 6, 
+    'dec_layers': 6,
     'heads': 8,
     'hidden_size': 512, 
+    'rnn_size': 512,
     'word_vec_size': 512, 
     'transformer_ff': 2048,
     'dropout_steps': [0],
@@ -307,10 +311,11 @@ if changed and os.path.isfile(onmt_vocab_file):
     os.unlink(onmt_vocab_file)
     
 if not os.path.isfile(onmt_vocab_file):
-    sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
+    subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1", "-num_threads", str(os.cpu_count())])
+    #sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
-if not (os.path.isfile(last_checkpoint) or args.inflight):
+if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed:
     cmd = ["onmt_train", "-config", onmt_config_path]
     if args.tensorboard:
         print("Launching tensorboard")
@@ -334,7 +339,7 @@ if not (os.path.isfile(last_checkpoint) or args.inflight):
     
     # Resume?
     checkpoints = sorted(glob.glob(os.path.join(onmt_dir, "*.pt")))
-    if len(checkpoints) > 0:
+    if len(checkpoints) > 0 and not changed:
         print(f"Resuming from {checkpoints[-1]}")
         cmd += ["--train_from", checkpoints[-1]]
 
