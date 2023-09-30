@@ -158,6 +158,7 @@ In no particular order, we'd like to thank:
  * [OpenNMT-py](https://github.com/OpenNMT/OpenNMT-py)
  * [SentencePiece](https://github.com/google/sentencepiece)
  * [Stanza](https://github.com/stanfordnlp/stanza)
+ * [argos-train](https://github.com/argosopentech/argos-train)
 
 For making Locomotive possible.
 
