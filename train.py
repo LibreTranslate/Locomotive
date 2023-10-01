@@ -311,8 +311,8 @@ if changed and os.path.isfile(onmt_vocab_file):
     os.unlink(onmt_vocab_file)
     
 if not os.path.isfile(onmt_vocab_file):
-    subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1", "-num_threads", str(os.cpu_count())])
-    #sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
+    #subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1", "-num_threads", str(os.cpu_count())])
+    sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
 if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed:
@@ -362,11 +362,11 @@ if len(checkpoints) == 1 or args.inflight:
     print("Single checkpoint")
     shutil.copy(checkpoints[-1], average_checkpoint)
 else:
-    if config.get('avg_checkpoints', 10) == 1:
+    if config.get('avg_checkpoints', 2) == 1:
         print("Averaging 1 model")
         shutil.copy(checkpoints[-1], average_checkpoint)
     else:
-        avg_num = min(config.get('avg_checkpoints', 10), len(checkpoints))
+        avg_num = min(config.get('avg_checkpoints', 2), len(checkpoints))
         print(f"Averaging {avg_num} models")
         average_models(checkpoints[-avg_num:], average_checkpoint)
 
