@@ -208,13 +208,13 @@ onmt_config = {
             'path_tgt': f'{rel_run_dir}/tgt-train.txt', 
             'weight': 1,
             'transforms': ['sentencepiece', 'filtertoolong']
-            #'transforms': ['onmt_tokenize', 'filtertoolong']
+            # 'transforms': ['onmt_tokenize', 'filtertoolong']
         },
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
             'transforms': ['sentencepiece', 'filtertoolong']
-            #'transforms': ['onmt_tokenize', 'filtertoolong']
+            # 'transforms': ['onmt_tokenize', 'filtertoolong']
         }
     }, 
     'src_subword_type': 'sentencepiece',
@@ -230,9 +230,9 @@ onmt_config = {
     'src_subword_model': f'{rel_run_dir}/sentencepiece.model', 
     'tgt_subword_model': f'{rel_run_dir}/sentencepiece.model', 
     'src_subword_nbest': 1, 
-    'src_subword_alpha': 0, 
+    'src_subword_alpha': 0.0, 
     'tgt_subword_nbest': 1, 
-    'tgt_subword_alpha': 0, 
+    'tgt_subword_alpha': 0.0, 
     'src_seq_length': 150, 
     'tgt_seq_length': 150, 
     'skip_empty_level': 'silent', 
@@ -246,11 +246,11 @@ onmt_config = {
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
     'queue_size': 10000,
-    'batch_size': 8192, 
+    'batch_size': 4096, 
     'max_generator_batches': 2, 
-    'accum_count': [4], 
+    'accum_count': [2], 
     'accum_steps': [0], 
-    'model_dtype': 'fp32', 
+    'model_dtype': 'fp16', 
     'optim': 'adam', 
     'learning_rate': 2, 
     'warmup_steps': 8000, 
