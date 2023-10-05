@@ -14,11 +14,10 @@ import stanza
 import re
 import zipfile
 import ctranslate2
-import signal
 from net import download
 from data import merge_shuffle
 import sentencepiece as spm
-from onmt_tools import average_models
+from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
 parser = argparse.ArgumentParser(description='Train LibreTranslate compatible models')
 parser.add_argument('--config',
@@ -40,6 +39,7 @@ parser.add_argument('--toy',
 parser.add_argument('--inflight',
     action='store_true',
     help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
+
 args = parser.parse_args() 
 try:
     with open(args.config) as f:
@@ -50,10 +50,6 @@ try:
 except Exception as e:
     print(f"Cannot open config file: {e}")
     exit(1)
-
-def handler(signum, frame):
-    exit(0) 
-signal.signal(signal.SIGINT, handler)
 
 print(f"Training {config['from']['name']} --> {config['to']['name']} ({config['version']})")
 print(f"Sources: {len(config['sources'])}")
@@ -78,7 +74,7 @@ rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
 
-if args.rerun:
+if args.rerun and os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
 
 sources = {}
@@ -210,14 +206,27 @@ onmt_config = {
         'corpus_1': {
             'path_src': f'{rel_run_dir}/src-train.txt', 
             'path_tgt': f'{rel_run_dir}/tgt-train.txt', 
+            'weight': 1,
             'transforms': ['sentencepiece', 'filtertoolong']
-        }, 
+            # 'transforms': ['onmt_tokenize', 'filtertoolong']
+        },
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
             'transforms': ['sentencepiece', 'filtertoolong']
+            # 'transforms': ['onmt_tokenize', 'filtertoolong']
         }
     }, 
+    'src_subword_type': 'sentencepiece',
+    'tgt_subword_type': 'sentencepiece',
+    'src_onmttok_kwargs': {
+        'mode': 'none',
+        'lang': config['from']['code'],
+    },
+    'tgt_onmttok_kwargs': {
+        'mode': 'none',
+        'lang': config['to']['code'],
+    },
     'src_subword_model': f'{rel_run_dir}/sentencepiece.model', 
     'tgt_subword_model': f'{rel_run_dir}/sentencepiece.model', 
     'src_subword_nbest': 1, 
@@ -232,17 +241,16 @@ onmt_config = {
     'valid_steps': 5000, 
     'train_steps': 50000, 
     'early_stopping': 4, 
-    'queue_size': 10000, 
     'bucket_size': 262144, 
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
-    'batch_size': 8192, 
-    'valid_batch_size': 4096, 
+    'queue_size': 10000,
+    'batch_size': 4096, 
     'max_generator_batches': 2, 
-    'accum_count': [4], 
+    'accum_count': [2], 
     'accum_steps': [0], 
-    'model_dtype': 'fp32', 
+    'model_dtype': 'fp16', 
     'optim': 'adam', 
     'learning_rate': 2, 
     'warmup_steps': 8000, 
@@ -257,14 +265,14 @@ onmt_config = {
     'decoder_type': 'transformer', 
     'position_encoding': True, 
     'enc_layers': 6, 
-    'dec_layers': 6, 
+    'dec_layers': 6,
     'heads': 8,
     'hidden_size': 512, 
     'rnn_size': 512,
     'word_vec_size': 512, 
-    'transformer_ff': 2048, 
+    'transformer_ff': 2048,
     'dropout_steps': [0],
-    'dropout': [0.1], 
+    'dropout': [0.1],
     'attention_dropout': [0.1], 
     'share_decoder_embeddings': True, 
     'share_embeddings': True
@@ -289,20 +297,25 @@ for k in onmt_config:
     if k in config:
         onmt_config[k] = config[k]
 
+# Dependent variables
+onmt_config['valid_batch_size'] = onmt_config['batch_size'] // 2
+
 onmt_config_path = os.path.join(run_dir, "config.yml")
 with open(onmt_config_path, "w", encoding="utf-8") as f:
     f.write(yaml.dump(onmt_config))
     print(f"Wrote {onmt_config_path}")
 
+sp_vocab_file = os.path.join(run_dir, "sentencepiece.vocab")
 onmt_vocab_file = os.path.join(onmt_dir, "openmt.vocab")
 if changed and os.path.isfile(onmt_vocab_file):
     os.unlink(onmt_vocab_file)
     
 if not os.path.isfile(onmt_vocab_file):
-    subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1"])
+    #subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1", "-num_threads", str(os.cpu_count())])
+    sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
-if not (os.path.isfile(last_checkpoint) or args.inflight):
+if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed:
     cmd = ["onmt_train", "-config", onmt_config_path]
     if args.tensorboard:
         print("Launching tensorboard")
@@ -323,6 +336,12 @@ if not (os.path.isfile(last_checkpoint) or args.inflight):
         webbrowser.open(url)
 
         cmd += ["--tensorboard", "--tensorboard_log_dir", log_dir]
+    
+    # Resume?
+    checkpoints = sorted(glob.glob(os.path.join(onmt_dir, "*.pt")))
+    if len(checkpoints) > 0 and not changed:
+        print(f"Resuming from {checkpoints[-1]}")
+        cmd += ["--train_from", checkpoints[-1]]
 
     subprocess.run(cmd)
 
@@ -338,8 +357,18 @@ if len(checkpoints) == 0:
 
 if os.path.isfile(average_checkpoint):
     os.unlink(average_checkpoint)
-print("Averaging models")
-average_models(checkpoints[-2:], average_checkpoint)
+
+if len(checkpoints) == 1 or args.inflight:
+    print("Single checkpoint")
+    shutil.copy(checkpoints[-1], average_checkpoint)
+else:
+    if config.get('avg_checkpoints', 2) == 1:
+        print("Averaging 1 model")
+        shutil.copy(checkpoints[-1], average_checkpoint)
+    else:
+        avg_num = min(config.get('avg_checkpoints', 2), len(checkpoints))
+        print(f"Averaging {avg_num} models")
+        average_models(checkpoints[-avg_num:], average_checkpoint)
 
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")

@@ -21,6 +21,9 @@ parser.add_argument('--flores-id',
     type=int,
     default=None,
     help='Evaluate this flores sentence ID. Default: %(default)s')
+parser.add_argument('--tokens',
+    action="store_true",
+    help='Display tokens rather than words. Default: %(default)s')
 
 
 args = parser.parse_args()
@@ -54,7 +57,10 @@ def encode(text, tokenizer):
     return tokenizer.Encode(text, out_type=str)
 
 def decode(tokens, tokenizer):
-    return tokenizer.Decode(tokens)
+    if args.tokens:
+        return " ".join(tokens)
+    else:
+        return tokenizer.Decode(tokens)
 
 data = translator()
 
