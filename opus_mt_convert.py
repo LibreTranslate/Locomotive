@@ -27,14 +27,29 @@ parser.add_argument('-t', '--target',
     default="it",
     required=True,
     help='Target language code: %(default)s')
+parser.add_argument('--src-name',
+    type=str,
+    default="",
+    help='Override source name: %(default)s')
+parser.add_argument('--tgt-name',
+    type=str,
+    default="",
+    help='Override target name: %(default)s')
 parser.add_argument('--model-url',
     type=str,
     default="",
     help='URL to OPUS model: %(default)s')
 args = parser.parse_args()
 
-src_lang = iso639.find(args.source)
-tgt_lang = iso639.find(args.target)
+if args.src_name:
+    src_lang = {'name': args.src_name}
+else:
+    src_lang = iso639.find(args.source)
+
+if args.tgt_name:
+    tgt_lang = {'name': args.tgt_name}
+else:
+    tgt_lang = iso639.find(args.target)
 
 if src_lang is None:
     print(f"Cannot find source language code: {args.source}")
