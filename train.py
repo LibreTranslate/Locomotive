@@ -238,7 +238,7 @@ onmt_config = {
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
     'save_checkpoint_steps': 1000, 
-    'valid_steps': 5000, 
+    'valid_steps': 2500, 
     'train_steps': 50000, 
     'early_stopping': 4, 
     'bucket_size': 262144, 
@@ -273,9 +273,7 @@ onmt_config = {
     'transformer_ff': 2048,
     'dropout_steps': [0],
     'dropout': [0.1],
-    'attention_dropout': [0.1], 
-    'share_decoder_embeddings': True, 
-    'share_embeddings': True
+    'attention_dropout': [0.1]
 }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
@@ -412,6 +410,7 @@ with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_STORED) as zipf:
 
     add_file(readme_file)
     add_file(metadata_file)
+    add_file(sp_model_path)
     add_folder(ct2_model_dir)
     add_folder(stanza_dir)
 

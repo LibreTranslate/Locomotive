@@ -162,6 +162,23 @@ python eval.py --config config.json --bleu
 BLEU score: 45.12354
 ```
 
+## Convert Helsinki-NLP OPUS MT models
+
+Locomotive provides a convenient script to convert pre-trained models from [OPUS-MT](https://github.com/Helsinki-NLP/OPUS-MT-train) to make them compatible with LibreTranslate:
+
+```bash
+python opus_mt_convert.py -s en -t es
+```
+
+To run evaluation:
+
+```bash
+python eval.py --config run/en_es-opus_1.0/config.json
+```
+
+The script is experimental. If you find issues, feel free to open a pull request!
+
+
 ## Contribute
 
 Want to share your model with the world? Post it on [community.libretranslate.com](https://community.libretranslate.com) and we'll include in future releases of LibreTranslate. Make sure to share both a forward and reverse model (e.g. `en => es` and `es => en`), otherwise we won't be able to include it in the model repository.
