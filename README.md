@@ -2,6 +2,8 @@
 
 Easy to use, cross-platform toolkit to train [argos-translate](https://github.com/argosopentech/argos-translate) models, which can be used by [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) 🚂
 
+It can also [convert pre-trained Opus-MT models](#convert-helsinki-nlp-opus-mt-models).
+
 ## Requirements
 
  * Python >= 3.8
