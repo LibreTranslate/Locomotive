@@ -56,11 +56,14 @@ def translator():
 def encode(text, tokenizer):
     return tokenizer.Encode(text, out_type=str)
 
-def decode(tokens, tokenizer):
+def decode(tokens):
     if args.tokens:
         return " ".join(tokens)
     else:
-        return tokenizer.Decode(tokens)
+        detokenized = "".join(tokens).replace("▁", " ")
+        if len(detokenized) > 0 and detokenized[0] == " ":
+            detokenized = detokenized[1:]
+        return detokenized
 
 data = translator()
 
@@ -230,7 +233,7 @@ if args.bleu or args.flores_id is not None:
     )
 
     translated_text = [
-        decode(tokens.hypotheses[0], data["tokenizer"])
+        decode(tokens.hypotheses[0])
         for tokens in translation_obj
     ]
     
@@ -260,7 +263,7 @@ else:
             return_scores=False, # speed up
         )
         translated_text = [
-            decode(tokens.hypotheses[0], data["tokenizer"])
+            decode(tokens.hypotheses[0])
             for tokens in translation_obj
         ]
         print(f"({config['to']['code']})> {translated_text[0]}")

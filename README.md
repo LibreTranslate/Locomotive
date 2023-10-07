@@ -2,6 +2,8 @@
 
 Easy to use, cross-platform toolkit to train [argos-translate](https://github.com/argosopentech/argos-translate) models, which can be used by [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) 🚂
 
+It can also [convert pre-trained Opus-MT models](#convert-helsinki-nlp-opus-mt-models).
+
 ## Requirements
 
  * Python >= 3.8
@@ -161,6 +163,23 @@ You can also compute [BLEU](https://en.wikipedia.org/wiki/BLEU) scores against t
 python eval.py --config config.json --bleu
 BLEU score: 45.12354
 ```
+
+## Convert Helsinki-NLP OPUS MT models
+
+Locomotive provides a convenient script to convert pre-trained models from [OPUS-MT](https://github.com/Helsinki-NLP/OPUS-MT-train) to make them compatible with LibreTranslate:
+
+```bash
+python opus_mt_convert.py -s en -t es
+```
+
+To run evaluation:
+
+```bash
+python eval.py --config run/en_es-opus_1.0/config.json
+```
+
+The script is experimental. If you find issues, feel free to open a pull request!
+
 
 ## Contribute
 
