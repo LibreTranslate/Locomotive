@@ -169,13 +169,13 @@ BLEU score: 45.12354
 Locomotive provides a convenient script to convert pre-trained models from [OPUS-MT](https://github.com/Helsinki-NLP/OPUS-MT-train) to make them compatible with LibreTranslate:
 
 ```bash
-python opus_mt_convert.py -s en -t es
+python opus_mt_convert.py -s en -t it
 ```
 
 To run evaluation:
 
 ```bash
-python eval.py --config run/en_es-opus_1.0/config.json
+python eval.py --config run/en_it-opus_1.0/config.json
 ```
 
 The script is experimental. If you find issues, feel free to open a pull request!
