@@ -56,7 +56,7 @@ print(f"Sources: {len(config['sources'])}")
 
 metadata = {
     "package_version": config['version'],
-    "argos_version": "1.5",
+    "argos_version": "1.8.2",
     "from_code": config['from']['code'],
     "from_name": config['from']['name'],
     "to_code": config['to']['code'],
