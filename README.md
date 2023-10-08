@@ -180,6 +180,9 @@ python eval.py --config run/en_it-opus_1.0/config.json
 
 The script is experimental. If you find issues, feel free to open a pull request!
 
+### Known Limitations
+
+Currently only models trained with SentencePiece tokenizers can be converted.
 
 ## Contribute
 
