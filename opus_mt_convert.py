@@ -10,7 +10,6 @@ import re
 import shutil
 import glob
 import stanza
-import ctranslate2
 import subprocess
 from net import download
 import requests
@@ -41,22 +40,26 @@ parser.add_argument('--model-url',
     help='URL to OPUS model: %(default)s')
 args = parser.parse_args()
 
+def lang_name_from_code(code):
+    lang = iso639.find(code)
+    if lang is None:
+        print(f"Cannot find source language code: {args.source}")
+        exit(1)
+    
+    name = lang['name']
+    if ";" in name:
+        name = name[name.index(";")+1:].strip()
+    return name
+    
 if args.src_name:
-    src_lang = {'name': args.src_name}
+    src_lang_name = args.src_name
 else:
-    src_lang = iso639.find(args.source)
+    src_lang_name = lang_name_from_code(args.source)
 
 if args.tgt_name:
-    tgt_lang = {'name': args.tgt_name}
+    tgt_lang_name = args.tgt_name
 else:
-    tgt_lang = iso639.find(args.target)
-
-if src_lang is None:
-    print(f"Cannot find source language code: {args.source}")
-    exit(1)
-if tgt_lang is None:
-    print(f"Cannot find target language code: {args.target}")
-    exit(1)
+    tgt_lang_name = lang_name_from_code(args.target)
 
 model_url = args.model_url
 if not model_url:
@@ -66,10 +69,16 @@ if not model_url:
     r = requests.get(readme_url)
     readme = r.content.decode("utf-8")
     matches = None
+    found_sentencepiece = False
     for line in readme.split("\n"):
-        matches = re.match(".*download: \[[^\]]+\]\((http[^)]+)\)", line)
-        if matches:
-            break
+        if "sentencepiece" in line.lower():
+            found_sentencepiece = True
+            continue
+
+        if found_sentencepiece:
+            matches = re.match(".*download: \[[^\]]+\]\((http[^)]+)\)", line)
+            if matches:
+                break
 
     if matches is None:
         print("Cannot find opus model URL. Please provide it manually via --model")
@@ -79,7 +88,7 @@ if not model_url:
 print(f"Model URL: {model_url}")
 version = "1.0"
 
-print(f"{src_lang['name']} --> {tgt_lang['name']} ({version})")
+print(f"{src_lang_name} --> {tgt_lang_name} ({version})")
 
 current_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(current_dir, "cache")
@@ -203,7 +212,7 @@ subprocess.run([
         "int8"])
 
 # Package
-readme = f"""# {src_lang['name']} - {tgt_lang['name']} version {version}
+readme = f"""# {src_lang_name} - {tgt_lang_name} version {version}
 
 Authors: Jörg Tiedemann and Santhosh Thottingal
 Title: "OPUS-MT — Building open translation services for the World"
@@ -218,9 +227,9 @@ metadata = {
     "package_version": version,
     "argos_version": "1.5",
     "from_code": args.source,
-    "from_name": src_lang['name'],
+    "from_name": src_lang_name,
     "to_code": args.target,
-    "to_name": tgt_lang['name'],
+    "to_name": tgt_lang_name,
 }
 
 readme_file = os.path.join(run_dir, "README.md")
@@ -258,11 +267,11 @@ with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_STORED) as zipf:
 # Write config file
 config = {
     "from": {
-        "name": src_lang['name'],
+        "name": src_lang_name,
         "code": args.source
     },
     "to": {
-        "name": tgt_lang['name'],
+        "name": tgt_lang_name,
         "code": args.target
     },
     "version": f"opus_{version}",
