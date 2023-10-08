@@ -204,6 +204,7 @@ In no particular order, we'd like to thank:
  * [SentencePiece](https://github.com/google/sentencepiece)
  * [Stanza](https://github.com/stanfordnlp/stanza)
  * [argos-train](https://github.com/argosopentech/argos-train)
+ * [OPUS](https://opus.nlpl.eu)
 
 For making Locomotive possible.
 
