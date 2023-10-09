@@ -14,6 +14,7 @@ import stanza
 import re
 import zipfile
 import ctranslate2
+from opus import get_opus_dataset_url
 from net import download
 from data import sources_changed, get_flores, extract_flores_val
 import sentencepiece as spm
@@ -94,9 +95,14 @@ for s in config['sources']:
         for f in [f.path for f in os.scandir(dir) if f.is_file()]:
             if "target" in f.lower():
                 target = f
+            elif f.lower().endswith(f".{config['to']['code']}"):
+                target = f
+            
             if "source" in f.lower():
                 source = f
-            
+            elif f.lower().endswith(f".{config['from']['code']}"):
+                source = f
+
         if source is not None and target is not None:
             if args.reverse:
                 source, target = target, source
@@ -113,7 +119,15 @@ for s in config['sources']:
     if s.lower().startswith("file://"):
         add_source_from(s[7:])
     else:
-        # Network URL
+        if s.lower().startswith("opus://"):
+            try:
+                s = get_opus_dataset_url(s[7:], config["from"]["code"], config["to"]["code"], run_dir)
+                print(s)
+            except Exception as e:
+                print(e)
+                exit(1)
+
+        # Network/OPUS URL
         dataset_path = os.path.join(cache_dir, md5)
         zip_path = dataset_path + ".zip"
 
@@ -177,6 +191,8 @@ os.makedirs(run_dir, exist_ok=True)
 extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
 changed = sources_changed(sources, run_dir)
 
+print(sources)
+exit(1)
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
     while True:

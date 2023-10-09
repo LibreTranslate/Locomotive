@@ -66,12 +66,13 @@ Create a `config.json` file specifying your sources:
     "version": "1.0",
     "sources": [
         "file://D:\\path\\to\\mydataset-en_es",
+        "opus://Ubuntu",
         "http://data.argosopentech.com/data-ccaligned-en_es.argosdata",
     ]   
 }
 ```
 
-Note you can specify both local folders (using the `file://` prefix) or internet URLs to .zip archives (using the `http://` or `https://` prefix).
+Note you can specify, local folders (using the `file://` prefix), internet URLs to .zip archives (using the `http://` or `https://` prefix) or [OPUS](https://opus.nlpl.eu/) datasets (using the `opus://` prefix). For a complete list of OPUS datasets, see [OPUS.md](OPUS.md) and note that they are case-sensitive.
 
 Then run:
 
