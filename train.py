@@ -191,8 +191,6 @@ os.makedirs(run_dir, exist_ok=True)
 extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
 changed = sources_changed(sources, run_dir)
 
-print(sources)
-exit(1)
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
     while True:

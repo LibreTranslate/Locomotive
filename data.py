@@ -137,7 +137,7 @@ def sources_changed(sources, out_dir):
         with open(merge_hash_file, "r", encoding="utf-8") as f:
             merge_hash = f.readline().strip()
             if merge_hash == sources_hash:
-                print("Skipping merge shuffle, no changes in sources")
+                print("No changes in sources")
                 return False
 
     with open(merge_hash_file, "w", encoding="utf-8") as f:
