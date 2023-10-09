@@ -172,8 +172,7 @@ for s in config['sources']:
                 shutil.rmtree(subfolders[0])
         
         add_source_from(dataset_path)
-print(sources)
-exit(1)
+
 for k in sources:
     print(f" - {k} ({sources[k]['hash']})")
 
