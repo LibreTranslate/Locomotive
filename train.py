@@ -15,7 +15,7 @@ import re
 import zipfile
 import ctranslate2
 from net import download
-from data import merge_shuffle
+from data import sources_changed, get_flores, extract_flores_val
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
@@ -81,6 +81,12 @@ sources = {}
 
 for s in config['sources']:
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
+    weight = 1
+    if isinstance(s, dict):
+        if not "source" in s:
+            print("Malformed source: {s}. A 'source' key is required.")
+        weight = s.get("weight", 1)
+        s = s["source"]
     
     def add_source_from(dir):
         source, target = None, None
@@ -96,7 +102,8 @@ for s in config['sources']:
             sources[s] = {
                 'source': source,
                 'target': target,
-                'hash': md5
+                'hash': md5,
+                'weight': config['sources'][s].get('weight', 1)
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -150,7 +157,6 @@ for s in config['sources']:
 for k in sources:
     print(f" - {k} ({sources[k]['hash']})")
 
-
 stanza_lang_code = config['from']['code']
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
     while True:
@@ -167,13 +173,14 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
                 exit(1)
 
 os.makedirs(run_dir, exist_ok=True)
-changed = merge_shuffle(sources, run_dir)
+extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
+changed = sources_changed(sources, run_dir)
 
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
-            spm.SentencePieceTrainer.train(input=glob.glob(f"{run_dir}/*-val.txt") + glob.glob(f"{run_dir}/*-train.txt"), 
+            spm.SentencePieceTrainer.train(input=[sources[s]["source"] for s in sources] + [sources[s]["target"] for s in sources], 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
@@ -195,6 +202,7 @@ if not os.path.isfile(sp_model_path) or changed:
 
 os.makedirs(onmt_dir, exist_ok=True)
 
+transforms = ['sentencepiece', 'filtertoolong']
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
@@ -203,18 +211,10 @@ onmt_config = {
     'tgt_vocab_size': config.get('vocab_size', 50000),
     'share_vocab': True, 
     'data': {
-        'corpus_1': {
-            'path_src': f'{rel_run_dir}/src-train.txt', 
-            'path_tgt': f'{rel_run_dir}/tgt-train.txt', 
-            'weight': 1,
-            'transforms': ['sentencepiece', 'filtertoolong']
-            # 'transforms': ['onmt_tokenize', 'filtertoolong']
-        },
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-            'transforms': ['sentencepiece', 'filtertoolong']
-            # 'transforms': ['onmt_tokenize', 'filtertoolong']
+            'transforms': transforms
         }
     }, 
     'src_subword_type': 'sentencepiece',
@@ -275,6 +275,15 @@ onmt_config = {
     'dropout': [0.1],
     'attention_dropout': [0.1]
 }
+
+# Populate data sources
+for s in sources:
+    onmt_config['data'][sources[s]['hash']] = {
+        'path_src': sources[s]['source'], 
+        'path_tgt': sources[s]['target'], 
+        'weight': sources[s]['weight'],
+        'transforms': transforms
+    }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
 if sys.platform == 'darwin' or no_gpu:
@@ -342,7 +351,6 @@ if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed:
         cmd += ["--train_from", checkpoints[-1]]
 
     subprocess.run(cmd)
-
 
 # Average
 average_checkpoint = os.path.join(run_dir, "averaged.pt")

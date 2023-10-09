@@ -145,6 +145,21 @@ The model is generated using sensible default values. You can override the [defa
 }
 ```
 
+### Using Weights
+
+It's possible to specify weights for each source, for example, it's possible to instruct the training to use less samples for certain datasets:
+
+```json
+{
+    "sources": [
+        {"source": "file://D:\\path\\to\\mydataset-en_es", "weight": 0.5},
+        {"source": "http://data.argosopentech.com/data-ccaligned-en_es.argosdata", "weight": 1},
+    ]
+}
+```
+
+In the example above, twice as many samples will be taken from the CCAligned dataset compared to mydataset.
+
 ## Evaluate
 
 You can evaluate the model by running:
