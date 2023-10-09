@@ -121,7 +121,7 @@ for s in config['sources']:
     else:
         if s.lower().startswith("opus://"):
             try:
-                s = get_opus_dataset_url(s[7:], config["from"]["code"], config["to"]["code"], run_dir)
+                s = get_opus_dataset_url(s[7:], config["from"]["code"], config["to"]["code"], run_dir, args.reverse)
                 print(s)
             except Exception as e:
                 print(e)
