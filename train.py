@@ -126,7 +126,6 @@ for s in config['sources']:
         if s.lower().startswith("opus://"):
             try:
                 s = get_opus_dataset_url(s[7:], config["from"]["code"], config["to"]["code"], run_dir)
-                print(s)
             except Exception as e:
                 print(e)
                 exit(1)
