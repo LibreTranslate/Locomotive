@@ -80,13 +80,14 @@ if args.rerun and os.path.isdir(run_dir):
 sources = {}
 
 for s in config['sources']:
-    md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
     weight = 1
     if isinstance(s, dict):
         if not "source" in s:
             print("Malformed source: {s}. A 'source' key is required.")
         weight = s.get("weight", 1)
         s = s["source"]
+
+    md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
     
     def add_source_from(dir):
         source, target = None, None
@@ -103,7 +104,7 @@ for s in config['sources']:
                 'source': source,
                 'target': target,
                 'hash': md5,
-                'weight': config['sources'][s].get('weight', 1)
+                'weight': weight
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")

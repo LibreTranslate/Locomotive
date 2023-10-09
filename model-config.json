@@ -9,6 +9,6 @@
     },
     "version": "1.0",
     "sources": [
-        "https://data.argosopentech.com/data-tildemodel-en_it.argosdata"
+        {"source": "https://data.argosopentech.com/data-tildemodel-en_it.argosdata"}
     ]
 }
