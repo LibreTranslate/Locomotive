@@ -12,11 +12,9 @@ def opus_datasets():
     res = r.json()
     return res["corpora"]
 
-def get_opus_dataset_url(corpora, from_code, to_code, run_dir, reverse=False):
+def get_opus_dataset_url(corpora, from_code, to_code, run_dir):
     current_dir = os.path.dirname(__file__)
     opus_cache = os.path.join(run_dir, "opus_cache.json")
-    if reverse:
-        from_code, to_code = to_code, from_code
 
     cache = {}
     if os.path.isfile(opus_cache):

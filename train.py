@@ -93,19 +93,22 @@ for s in config['sources']:
     
     def add_source_from(dir):
         source, target = None, None
+        skip_reverse = False
         for f in [f.path for f in os.scandir(dir) if f.is_file()]:
             if "target" in f.lower():
                 target = f
             elif f.lower().endswith(f".{config['to']['code']}"):
                 target = f
+                skip_reverse = True
             
             if "source" in f.lower():
                 source = f
             elif f.lower().endswith(f".{config['from']['code']}"):
                 source = f
+                skip_reverse = True
 
         if source is not None and target is not None:
-            if args.reverse:
+            if args.reverse and not skip_reverse:
                 source, target = target, source
             sources[s] = {
                 'source': source,
@@ -122,7 +125,7 @@ for s in config['sources']:
     else:
         if s.lower().startswith("opus://"):
             try:
-                s = get_opus_dataset_url(s[7:], config["from"]["code"], config["to"]["code"], run_dir, args.reverse)
+                s = get_opus_dataset_url(s[7:], config["from"]["code"], config["to"]["code"], run_dir)
                 print(s)
             except Exception as e:
                 print(e)
