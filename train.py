@@ -263,9 +263,10 @@ onmt_config = {
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
     'queue_size': 10000,
-    'batch_size': 4096, 
+    'batch_size': 8192, 
+    'valid_batch_size': 128,
     'max_generator_batches': 2, 
-    'accum_count': [2], 
+    'accum_count': [4], 
     'accum_steps': [0], 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
@@ -280,7 +281,9 @@ onmt_config = {
     'normalization': 'tokens', 
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
-    'position_encoding': True, 
+    'position_encoding': False,
+    'max_relative_positions': 20,
+    'averaging_decay': 0.0001,
     'enc_layers': 6, 
     'dec_layers': 6,
     'heads': 8,
@@ -290,7 +293,9 @@ onmt_config = {
     'transformer_ff': 2048,
     'dropout_steps': [0],
     'dropout': [0.1],
-    'attention_dropout': [0.1]
+    'attention_dropout': [0.1],
+    'share_decoder_embeddings': True,
+    'share_embeddings': True
 }
 
 # Populate data sources
@@ -320,9 +325,6 @@ if args.toy:
 for k in onmt_config:
     if k in config:
         onmt_config[k] = config[k]
-
-# Dependent variables
-onmt_config['valid_batch_size'] = onmt_config['batch_size'] // 2
 
 onmt_config_path = os.path.join(run_dir, "config.yml")
 with open(onmt_config_path, "w", encoding="utf-8") as f:
@@ -385,11 +387,11 @@ if len(checkpoints) == 1 or args.inflight:
     print("Single checkpoint")
     shutil.copy(checkpoints[-1], average_checkpoint)
 else:
-    if config.get('avg_checkpoints', 2) == 1:
+    if config.get('avg_checkpoints', 1) == 1:
         print("Averaging 1 model")
         shutil.copy(checkpoints[-1], average_checkpoint)
     else:
-        avg_num = min(config.get('avg_checkpoints', 2), len(checkpoints))
+        avg_num = min(config.get('avg_checkpoints', 1), len(checkpoints))
         print(f"Averaging {avg_num} models")
         average_models(checkpoints[-avg_num:], average_checkpoint)
 
