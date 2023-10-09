@@ -77,6 +77,7 @@ os.makedirs(cache_dir, exist_ok=True)
 
 if args.rerun and os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
+os.makedirs(run_dir, exist_ok=True)
 
 sources = {}
 
@@ -168,7 +169,8 @@ for s in config['sources']:
                 shutil.rmtree(subfolders[0])
         
         add_source_from(dataset_path)
-
+print(sources)
+exit(1)
 for k in sources:
     print(f" - {k} ({sources[k]['hash']})")
 
@@ -187,7 +189,6 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
                 print(f'Cannot download stanza model: {str(e)}')
                 exit(1)
 
-os.makedirs(run_dir, exist_ok=True)
 extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
 changed = sources_changed(sources, run_dir)
 
