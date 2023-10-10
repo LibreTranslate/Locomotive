@@ -69,16 +69,16 @@ if not model_url:
     r = requests.get(readme_url)
     readme = r.content.decode("utf-8")
     matches = None
-    found_sentencepiece = False
+    # found_sentencepiece = False
     for line in readme.split("\n"):
-        if "sentencepiece" in line.lower():
-            found_sentencepiece = True
-            continue
+        # if "sentencepiece" in line.lower():
+        #     found_sentencepiece = True
+        #     continue
 
-        if found_sentencepiece:
-            matches = re.match(".*download: \[[^\]]+\]\((http[^)]+)\)", line)
-            if matches:
-                break
+        # if found_sentencepiece:
+        matches = re.match(".*download: \[[^\]]+\]\((http[^)]+)\)", line)
+        if matches:
+            break
 
     if matches is None:
         print("Cannot find opus model URL. Please provide it manually via --model")
@@ -123,8 +123,15 @@ for spm in spm_models:
         sp_model = spm
         break
 
-if sp_model is None:
-    print("Cannot find SentencePiece source model")
+bpe_models = glob.glob(os.path.join(model_path, "*.bpe"))
+bpe_model = None
+for bpe in bpe_models:
+    if "source" in bpe.lower():
+        bpe_model = bpe
+        break
+
+if sp_model is None and bpe_model is None:
+    print("Cannot find SentencePiece/BPE source model")
     exit(1)
 
 npz_models = glob.glob(os.path.join(model_path, "*.npz"))
@@ -167,17 +174,23 @@ if vocab_file is None:
     print("Cannot find vocab file")
     exit(1)
 
-print(f"SentencePiece model: {sp_model}")
-print(f"OPUS model: {npz_model}")
-print(f"Vocab: {vocab_file}")
-
 if os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
 os.makedirs(run_dir, exist_ok=True)
 
-# Copy sp model
-sp_model_path = os.path.join(run_dir, "sentencepiece.model")
-shutil.copy(sp_model, sp_model_path)
+sp_model_path = None
+bpe_model_path = None
+if sp_model is not None:
+    print(f"SentencePiece model: {sp_model}")
+    sp_model_path = os.path.join(run_dir, "sentencepiece.model")
+    shutil.copy(sp_model, sp_model_path)
+else:
+    print(f"BPE model: {bpe_model}")
+    bpe_model_path = os.path.join(run_dir, "bpe.model")
+    shutil.copy(bpe_model, bpe_model_path)
+
+print(f"OPUS model: {npz_model}")
+print(f"Vocab: {vocab_file}")
 
 stanza_lang_code = args.source
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
@@ -260,7 +273,10 @@ with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_STORED) as zipf:
 
     add_file(readme_file)
     add_file(metadata_file)
-    add_file(sp_model_path)
+    if sp_model_path is not None:
+        add_file(sp_model_path)
+    if bpe_model_path is not None:
+        add_file(bpe_model_path)
     add_folder(ct2_model_dir)
     add_folder(stanza_dir)
 

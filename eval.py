@@ -42,21 +42,36 @@ model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['versi
 run_dir = os.path.join(current_dir, "run", model_dirname)
 ct2_model_dir = os.path.join(run_dir, "model")
 sp_model = os.path.join(run_dir, "sentencepiece.model")
+bpe_model = os.path.join(run_dir, "bpe.model")
 
-if not os.path.isdir(ct2_model_dir) or not os.path.isfile(sp_model):
+if not os.path.isdir(ct2_model_dir) or (not os.path.isfile(sp_model) and not os.path.isfile(bpe_model)):
     print(f"The model in {run_dir} is not valid. Did you run train.py first?")
     exit(1)
+
+class BPETokenizer:
+    def __init__(self, model):
+        self.model = model
+    
+    def Encode(self, text, out_type=str):
+        return ["Is this impeding task straight@@ for@@ ward@@ ?".split(" ")]
 
 def translator():
     device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
     model = ctranslate2.Translator(ct2_model_dir, device=device, compute_type="auto")
-    tokenizer = sentencepiece.SentencePieceProcessor(sp_model)
+    if os.path.isfile(sp_model):
+        tokenizer = sentencepiece.SentencePieceProcessor(sp_model)
+    elif os.path.isfile(bpe_model):
+        tokenizer = BPETokenizer(bpe_model)
     return {"model": model, "tokenizer": tokenizer}
 
 def encode(text, tokenizer):
     return tokenizer.Encode(text, out_type=str)
 
 def decode(tokens):
+    from mosestokenizer import MosesTokenizer, MosesDetokenizer
+    dt = MosesDetokenizer()
+    return dt(tokens).replace('@@ ','')
+
     if args.tokens:
         return " ".join(tokens)
     else:
