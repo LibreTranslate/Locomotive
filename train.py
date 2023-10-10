@@ -266,7 +266,7 @@ onmt_config = {
     'batch_size': 8192, 
     'valid_batch_size': 128,
     'max_generator_batches': 2, 
-    'accum_count': [4], 
+    'accum_count': [12], 
     'accum_steps': [0], 
     'model_dtype': 'fp16', 
     'optim': 'adam', 

@@ -69,13 +69,7 @@ if not model_url:
     r = requests.get(readme_url)
     readme = r.content.decode("utf-8")
     matches = None
-    # found_sentencepiece = False
     for line in readme.split("\n"):
-        # if "sentencepiece" in line.lower():
-        #     found_sentencepiece = True
-        #     continue
-
-        # if found_sentencepiece:
         matches = re.match(".*download: \[[^\]]+\]\((http[^)]+)\)", line)
         if matches:
             break
