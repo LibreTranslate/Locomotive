@@ -107,6 +107,7 @@ for s in config['sources']:
                 source = f
                 skip_reverse = True
 
+
         if source is not None and target is not None:
             if args.reverse and not skip_reverse:
                 source, target = target, source
@@ -114,7 +115,8 @@ for s in config['sources']:
                 'source': source,
                 'target': target,
                 'hash': md5,
-                'weight': weight
+                'weight': weight,
+                'size': os.path.getsize(source),
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -172,8 +174,16 @@ for s in config['sources']:
         
         add_source_from(dataset_path)
 
+# Adjust weights based on relative dataset source sizes
+total_size = sum([sources[k]['size'] for k in sources])
+max_weight = 0
 for k in sources:
-    print(f" - {k} ({sources[k]['hash']})")
+    sources[k]['weight'] *= (sources[k]['size'] / total_size)
+    max_weight = max(sources[k]['weight'], max_weight)
+
+for k in sources:
+    sources[k]['weight'] = round(sources[k]['weight'] / max_weight, 4)
+    print(f" - {k} (hash:{sources[k]['hash'][:7]} | weight:{sources[k]['weight']})")
 
 stanza_lang_code = config['from']['code']
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
