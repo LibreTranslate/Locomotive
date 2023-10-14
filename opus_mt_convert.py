@@ -38,6 +38,12 @@ parser.add_argument('--model-url',
     type=str,
     default="",
     help='URL to OPUS model: %(default)s')
+parser.add_argument('-q', '--quantization',
+    type=str,
+    choices=["int8", "float32"],
+    default="int8",
+    help='Quantization: %(default)s')
+
 args = parser.parse_args()
 
 def lang_name_from_code(code):
@@ -206,7 +212,7 @@ ct2_model_dir = os.path.join(run_dir, "model")
 if os.path.isdir(ct2_model_dir):
     shutil.rmtree(ct2_model_dir)
 
-print("Converting to ctranslate2")
+print(f"Converting to ctranslate2 using {args.quantization}")
 subprocess.run([
         "ct2-marian-converter",
         "--model_path",
@@ -216,7 +222,7 @@ subprocess.run([
         "--output_dir",
         ct2_model_dir,
         "--quantization",
-        "int8"])
+        args.quantization])
 
 # Package
 readme = f"""# {src_lang_name} - {tgt_lang_name} version {version}
@@ -248,22 +254,22 @@ metadata_file = os.path.join(run_dir, "metadata.json")
 with open(metadata_file, "w", encoding="utf-8") as f:
     f.write(json.dumps(metadata))
 
-
-package_file = os.path.join(run_dir, f"translate-{args.source}_{args.target}-{version.replace('.', '_')}.argosmodel")
+zip_base = f"translate-{args.source}_{args.target}-{version.replace('.', '_')}"
+package_file = os.path.join(run_dir, f"{zip_base}.argosmodel")
 if os.path.isfile(package_file):
     os.unlink(package_file)
 
 print(f"Writing {package_file}")
 with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_STORED) as zipf:
     def add_file(f):
-        zipf.write(f, arcname=os.path.basename(f))
+        zipf.write(f, arcname=os.path.join(zip_base, os.path.basename(f)))
 
     def add_folder(f):
         for root, dirs, files in os.walk(f):
             for file in files:
                 file_path = os.path.join(root, file)
                 arcname = os.path.relpath(file_path, f)
-                zipf.write(file_path, arcname=os.path.join(os.path.basename(f), arcname))
+                zipf.write(file_path, arcname=os.path.join(zip_base, os.path.basename(f), arcname))
 
     add_file(readme_file)
     add_file(metadata_file)

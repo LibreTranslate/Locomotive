@@ -53,7 +53,8 @@ class BPETokenizer:
         self.model = model
     
     def Encode(self, text, out_type=str):
-        return ["Is this impeding task straight@@ for@@ ward@@ ?".split(" ")]
+        # TODO: moses encode
+        return [text[0].split(" ")]
 
 def translator():
     device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
@@ -68,10 +69,6 @@ def encode(text, tokenizer):
     return tokenizer.Encode(text, out_type=str)
 
 def decode(tokens):
-    from mosestokenizer import MosesTokenizer, MosesDetokenizer
-    dt = MosesDetokenizer()
-    return dt(tokens).replace('@@ ','')
-
     if args.tokens:
         return " ".join(tokens)
     else:
