@@ -31,6 +31,9 @@ parser.add_argument('--reverse',
 parser.add_argument('--rerun',
     action='store_true',
     help='Rerun the training from scratch. Default: %(default)s')
+parser.add_argument('--rerun-onmt',
+    action='store_true',
+    help='Rerun the training from ONMT training. Default: %(default)s')
 parser.add_argument('--tensorboard',
     action='store_true',
     help='Run tensorboard during training. Default: %(default)s')
@@ -116,7 +119,6 @@ for s in config['sources']:
                 'target': target,
                 'hash': md5,
                 'weight': weight,
-                'size': os.path.getsize(source),
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -174,15 +176,12 @@ for s in config['sources']:
         
         add_source_from(dataset_path)
 
-# Adjust weights based on relative dataset source sizes
-total_size = sum([sources[k]['size'] for k in sources])
-max_weight = 0
+min_weight = float('inf')
 for k in sources:
-    sources[k]['weight'] *= (sources[k]['size'] / total_size)
-    max_weight = max(sources[k]['weight'], max_weight)
+    min_weight = min(sources[k]['weight'], min_weight)
 
 for k in sources:
-    sources[k]['weight'] = round(sources[k]['weight'] / max_weight, 4)
+    sources[k]['weight'] = int(round(sources[k]['weight'] / min_weight, 0))
     print(f" - {k} (hash:{sources[k]['hash'][:7]} | weight:{sources[k]['weight']})")
 
 stanza_lang_code = config['from']['code']
@@ -273,11 +272,11 @@ onmt_config = {
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
     'queue_size': 10000,
-    'batch_size': 8192,
+    'batch_size': 4096,
     'valid_batch_size': 128,
     'max_generator_batches': 2, 
-    'accum_count': [6], 
-    'accum_steps': [0], 
+    'accum_count': 8, 
+    'accum_steps': 0, 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
     'learning_rate': 2, 
@@ -301,9 +300,9 @@ onmt_config = {
     'rnn_size': 512,
     'word_vec_size': 512, 
     'transformer_ff': 2048,
-    'dropout_steps': [0],
-    'dropout': [0.1],
-    'attention_dropout': [0.1],
+    'dropout_steps': 0,
+    'dropout': 0.1,
+    'attention_dropout': 0.1,
     'share_decoder_embeddings': True,
     'share_embeddings': True
 }
@@ -353,6 +352,13 @@ if not os.path.isfile(onmt_vocab_file):
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
 if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed:
     cmd = ["onmt_train", "-config", onmt_config_path]
+
+    if args.rerun_onmt:
+        delete_checkpoints = glob.glob(os.path.join(onmt_dir, "*.pt"))
+        for dc in delete_checkpoints:
+            os.unlink(dc)
+            print(f"Removed {dc}")
+
     if args.tensorboard:
         print("Launching tensorboard")
 
