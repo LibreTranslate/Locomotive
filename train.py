@@ -279,7 +279,7 @@ onmt_config = {
     'accum_steps': 0, 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
-    'learning_rate': 2, 
+    'learning_rate': 1,
     'warmup_steps': 8000, 
     'decay_method': 'noam', 
     'adam_beta2': 0.998, 
@@ -350,7 +350,7 @@ if not os.path.isfile(onmt_vocab_file):
     sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
-if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed:
+if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.rerun_onmt:
     cmd = ["onmt_train", "-config", onmt_config_path]
 
     if args.rerun_onmt:
