@@ -5,6 +5,7 @@ import ctranslate2
 import sentencepiece
 from sacrebleu import corpus_bleu
 from data import get_flores
+from tokenizer import BPETokenizer, SentencePieceTokenizer
 
 parser = argparse.ArgumentParser(description='Evaluate LibreTranslate compatible models')
 parser.add_argument('--config',
@@ -48,31 +49,25 @@ if not os.path.isdir(ct2_model_dir) or (not os.path.isfile(sp_model) and not os.
     print(f"The model in {run_dir} is not valid. Did you run train.py first?")
     exit(1)
 
-class BPETokenizer:
-    def __init__(self, model):
-        self.model = model
-    
-    def Encode(self, text, out_type=str):
-        # TODO: moses encode
-        return [text[0].split(" ")]
+
 
 def translator():
     device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
     model = ctranslate2.Translator(ct2_model_dir, device=device, compute_type="auto")
     if os.path.isfile(sp_model):
-        tokenizer = sentencepiece.SentencePieceProcessor(sp_model)
+        tokenizer = SentencePieceTokenizer(sp_model)
     elif os.path.isfile(bpe_model):
-        tokenizer = BPETokenizer(bpe_model)
+        tokenizer = BPETokenizer(bpe_model, config["from"]["code"], config["to"]["code"])
     return {"model": model, "tokenizer": tokenizer}
 
 def encode(text, tokenizer):
-    return tokenizer.Encode(text, out_type=str)
+    return tokenizer.encode(text)
 
-def decode(tokens):
+def decode(tokens, tokenizer):
     if args.tokens:
         return " ".join(tokens)
     else:
-        detokenized = "".join(tokens).replace("▁", " ")
+        detokenized = tokenizer.decode(tokens)
         if len(detokenized) > 0 and detokenized[0] == " ":
             detokenized = detokenized[1:]
         return detokenized
@@ -88,13 +83,13 @@ if args.bleu or args.flores_id is not None:
         tgt_text = [tgt_text[args.flores_id]]
 
     translation_obj = data["model"].translate_batch(
-        encode(src_text, data["tokenizer"]),
+        [encode(t, data["tokenizer"]) for t in src_text],
         beam_size=4, # same as argos
         return_scores=False, # speed up
     )
 
     translated_text = [
-        decode(tokens.hypotheses[0])
+        decode(tokens.hypotheses[0], data["tokenizer"])
         for tokens in translation_obj
     ]
     
@@ -117,14 +112,15 @@ else:
             print("")
             exit(0)
 
-        src_text = [text.rstrip('\n')]
+        src_text = text.rstrip('\n')
         translation_obj = data["model"].translate_batch(
-            encode(src_text, data["tokenizer"]),
+            [encode(src_text, data["tokenizer"])],
             beam_size=4, # same as argos
             return_scores=False, # speed up
         )
+
         translated_text = [
-            decode(tokens.hypotheses[0])
+            decode(tokens.hypotheses[0], data["tokenizer"])
             for tokens in translation_obj
         ]
         print(f"({config['to']['code']})> {translated_text[0]}")

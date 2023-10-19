@@ -143,6 +143,8 @@ def sources_changed(sources, out_dir):
     with open(merge_hash_file, "w", encoding="utf-8") as f:
         f.write(sources_hash)
 
+    return True
+
 def get_flores_dataset_path(dataset="dev"):
     if dataset != "dev" and dataset != "devtest":
         print(f"Invalid dataset {dataset} (must be either dev or devtest)")

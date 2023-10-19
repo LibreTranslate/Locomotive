@@ -238,7 +238,7 @@ The original OPUS model from which this packaged model is derived is licensed CC
 
 metadata = {
     "package_version": version,
-    "argos_version": "1.8.2",
+    "argos_version": "1.9.0",
     "from_code": args.source,
     "from_name": src_lang_name,
     "to_code": args.target,

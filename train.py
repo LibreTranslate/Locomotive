@@ -60,7 +60,7 @@ print(f"Sources: {len(config['sources'])}")
 
 metadata = {
     "package_version": config['version'],
-    "argos_version": "1.8.2",
+    "argos_version": "1.9.0",
     "from_code": config['from']['code'],
     "from_name": config['from']['name'],
     "to_code": config['to']['code'],
@@ -183,6 +183,10 @@ for k in sources:
 for k in sources:
     sources[k]['weight'] = int(round(sources[k]['weight'] / min_weight, 0))
     print(f" - {k} (hash:{sources[k]['hash'][:7]} | weight:{sources[k]['weight']})")
+
+# from data import merge_shuffle
+# merge_shuffle(sources, run_dir)
+# exit(1)
 
 stanza_lang_code = config['from']['code']
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
