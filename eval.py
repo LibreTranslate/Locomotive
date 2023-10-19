@@ -53,7 +53,7 @@ if not os.path.isdir(ct2_model_dir) or (not os.path.isfile(sp_model) and not os.
 
 def translator():
     device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
-    model = ctranslate2.Translator(ct2_model_dir, device=device, compute_type="auto")
+    model = ctranslate2.Translator(ct2_model_dir, device="cpu", compute_type="default")
     if os.path.isfile(sp_model):
         tokenizer = SentencePieceTokenizer(sp_model)
     elif os.path.isfile(bpe_model):

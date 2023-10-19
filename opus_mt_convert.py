@@ -43,7 +43,10 @@ parser.add_argument('-q', '--quantization',
     choices=["int8", "float32"],
     default="int8",
     help='Quantization: %(default)s')
-
+parser.add_argument('--bos',
+    type=str,
+    default="",
+    help='Set beginning of sentence token in model configuration: %(default)s')
 args = parser.parse_args()
 
 def lang_name_from_code(code):
@@ -166,7 +169,7 @@ vocabs = glob.glob(os.path.join(model_path, "*.yml"))
 vocab_file = None
 # Case with a single model
 for v in vocabs:
-    if "opus" in v.lower() and not "decoder" in v.lower():
+    if "opus" in v.lower() and not "decoder" in v.lower() and ".vocab." in v.lower():
         vocab_file = v
         break
 
@@ -193,6 +196,14 @@ print(f"OPUS model: {npz_model}")
 print(f"Vocab: {vocab_file}")
 
 stanza_lang_code = args.source
+remapped = False
+stanza_remap = {
+    "zt": "zh-hant"
+}
+if stanza_lang_code in stanza_remap:
+    remapped = stanza_lang_code
+    stanza_lang_code = stanza_remap[stanza_lang_code]
+
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
     while True:
         try:
@@ -206,6 +217,18 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             else:
                 print(f'Cannot download stanza model: {str(e)}')
                 exit(1)
+
+if remapped:
+    resources_file = os.path.join(stanza_dir, "resources.json")
+    with open(resources_file, "r", encoding="utf-8") as f:
+        resources = json.loads(f.read())
+
+    if not remapped in resources:
+        resources[remapped] = {"alias": stanza_lang_code}
+        with open(resources_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps(resources, indent=4))
+            print(f"Wrote {resources_file}")
+
 
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")
@@ -223,6 +246,22 @@ subprocess.run([
         ct2_model_dir,
         "--quantization",
         args.quantization])
+
+if args.bos:
+    ct2_model_config = os.path.join(ct2_model_dir, "config.json")
+    if not os.path.isfile(ct2_model_config):
+        print(f"Cannot find {ct2_model_config}")
+        exit(1)
+
+    model_conf = {}
+    with open(ct2_model_config, "r", encoding="utf-8") as f:
+        model_conf = json.loads(f.read())
+    model_conf['add_source_bos'] = True
+    model_conf['bos_token'] = args.bos
+
+    with open(ct2_model_config, "w", encoding="utf-8") as f:
+        f.write(json.dumps(model_conf, indent=4))
+    print(f"Wrote {ct2_model_config}")
 
 # Package
 readme = f"""# {src_lang_name} - {tgt_lang_name} version {version}
