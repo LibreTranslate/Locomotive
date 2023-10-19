@@ -206,7 +206,7 @@ The script is experimental. If you find issues, feel free to open a pull request
 
 ### Known Limitations
 
-Currently only models trained with SentencePiece tokenizers can be converted.
+Some models fail to execute with int8 quantization. If you get a lot of repeated words, try to set `-q float32` to keep full quantization.
 
 ## Contribute
 
