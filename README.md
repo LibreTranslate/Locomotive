@@ -188,6 +188,14 @@ Locomotive provides a convenient script to convert pre-trained models from [OPUS
 python opus_mt_convert.py -s en -t it
 ```
 
+This will attempt to automatically find/download the OPUS-MT's model archive from https://github.com/Helsinki-NLP/OPUS-MT-train/tree/master/models/ or https://github.com/Helsinki-NLP/Tatoeba-Challenge/tree/master/models/. This doesn't always work, and will not always pick the best model. You can specify a model archive manually by using the `--model-url` parameter:
+
+Some models also need a beginning of sentence (BOS) token for the model to work. You can specify a BOS token by using the `--bos` parameter:
+
+```
+python opus_mt_convert.py -s en -t vi --model-url https://object.pouta.csc.fi/Tatoeba-MT-models/eng-vie/opus+bt-2021-04-10.zip --bos ">>vie<<"
+```
+
 To run evaluation:
 
 ```bash

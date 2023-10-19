@@ -198,7 +198,13 @@ print(f"Vocab: {vocab_file}")
 stanza_lang_code = args.source
 remapped = False
 stanza_remap = {
-    "zt": "zh-hant"
+    "zt": "zh-hant",
+    "sq": "hy",
+    "hr": "hy",
+    "ro": "it",
+    "sr": "hy",
+    "sl": "hy",
+    "bn": "hi",
 }
 if stanza_lang_code in stanza_remap:
     remapped = stanza_lang_code
@@ -211,12 +217,8 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
             break
         except Exception as e:
-            if stanza_lang_code != "en":
-                print(f'Could not locate stanza model for "{stanza_lang_code}", we will use "en" instead. Note this might not work well.')
-                stanza_lang_code = "en"
-            else:
-                print(f'Cannot download stanza model: {str(e)}')
-                exit(1)
+            print(f'Cannot download stanza model: {str(e)}')
+            exit(1)
 
 if remapped:
     resources_file = os.path.join(stanza_dir, "resources.json")

@@ -61,6 +61,4 @@ class BPETokenizer(Tokenizer):
     def decode(self, tokens):
         self.lazy_load()
         
-        for i in range(len(tokens)):
-            tokens[i] = tokens[i].replace('@@', '')
-        return self.detokenizer.detokenize(tokens)
+        return self.detokenizer.detokenize(" ".join(tokens).replace("@@ ", "").split(" "))

@@ -196,12 +196,8 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
             break
         except Exception as e:
-            if stanza_lang_code != "en":
-                print(f'Could not locate stanza model for "{stanza_lang_code}", we will use "en" instead. Note this might not work well.')
-                stanza_lang_code = "en"
-            else:
-                print(f'Cannot download stanza model: {str(e)}')
-                exit(1)
+            print(f'Cannot download stanza model: {str(e)}')
+            exit(1)
 
 extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
 changed = sources_changed(sources, run_dir)
