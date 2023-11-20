@@ -212,6 +212,15 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 line_t = ft.readline()
                 if not line_s or not line_t:
                     break
+                
+                # Skip empty
+                if not line_s.strip():
+                    continue
+
+                # Skip duplicates
+                if line_s == line_t:
+                    continue
+                
                 data.append((line_s, line_t))
         print(f"New sentence count: {len(data)}")
     

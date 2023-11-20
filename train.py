@@ -184,10 +184,6 @@ for k in sources:
     sources[k]['weight'] = int(round(sources[k]['weight'] / min_weight, 0))
     print(f" - {k} (hash:{sources[k]['hash'][:7]} | weight:{sources[k]['weight']})")
 
-# from data import merge_shuffle
-# merge_shuffle(sources, run_dir)
-# exit(1)
-
 stanza_lang_code = config['from']['code']
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
     while True:

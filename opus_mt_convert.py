@@ -201,9 +201,7 @@ stanza_remap = {
     "zt": "zh-hant",
     "sq": "hy",
     "hr": "hy",
-    "ro": "it",
     "sr": "hy",
-    "sl": "hy",
     "bn": "hi",
     "ms": "en",
     "tl": "en",
@@ -232,7 +230,9 @@ if remapped:
         with open(resources_file, "w", encoding="utf-8") as f:
             f.write(json.dumps(resources, indent=4))
             print(f"Wrote {resources_file}")
-
+    else:
+        print("Error: lang code already in stanza model. Remove the entry from stanza_remap.")
+        exit(1)
 
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")
