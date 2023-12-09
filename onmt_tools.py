@@ -48,10 +48,10 @@ def sp_vocab_to_onmt_vocab(sp_vocab, onmt_vocab):
         with open(onmt_vocab, 'wb') as fout:
             OMIT = (DefaultTokens.UNK, DefaultTokens.BOS, DefaultTokens.EOS)
             for line in fin:
-                line_and_freq = line.rstrip("\n").split(None, 1)
-                if len(line_and_freq) != 2:
+                token_and_freq = line.rstrip("\n").split(None, 1)
+                if len(token_and_freq) != 2:
                     continue
-                w, c = line_and_freq
+                w, c = token_and_freq
                 if w in OMIT:
                     continue
                 c = math.exp(float(c)) * 1000000
