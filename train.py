@@ -443,6 +443,12 @@ shutil.copytree(ct2_model_dir, os.path.join(package_folder, "model"))
 shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
 
 print(f"Writing {package_file}")
-shutil.make_archive(os.path.join(run_dir, package_slug), 'zip', package_folder, package_slug)
-os.rename(os.path.join(run_dir, package_slug + ".zip"), package_file)
+zip_filename = os.path.join(run_dir, f"{package_slug}.zip")
+with zipfile.ZipFile(zip_filename, 'w') as zipf:
+    for root, dirs, files in os.walk(package_folder):
+        for file in files:
+            file_path = os.path.join(root, file)
+            arcname = os.path.relpath(file_path, package_folder)
+            zipf.write(file_path, arcname=arcname)
+os.rename(zip_filename, package_file)
 print("Done!")
