@@ -1,5 +1,4 @@
 import argparse
-import io
 import sys
 import json
 import os
@@ -422,35 +421,28 @@ subprocess.run([
         "--quantization",
         "int8"])
 
-# Package
-readme_file = os.path.join(run_dir, "README.md")
+# Create .argosmodel package
+package_slug = f"translate-{config['from']['code']}_{config['to']['code']}-{config['version'].replace('.', '_')}"
+package_file = os.path.join(run_dir, f"{package_slug}.argosmodel")
+if os.path.isfile(package_file):
+    os.unlink(package_file)
+package_folder = os.path.join(run_dir, package_slug)
+if os.path.isdir(package_folder):
+    shutil.rmtree(package_folder)
+os.makedirs(package_folder, exist_ok=True)
+
+readme_file = os.path.join(package_folder, "README.md")
 with open(readme_file, "w", encoding="utf-8") as f:
     f.write(readme)
-
-metadata_file = os.path.join(run_dir, "metadata.json")
+metadata_file = os.path.join(package_folder, "metadata.json")
 with open(metadata_file, "w", encoding="utf-8") as f:
     f.write(json.dumps(metadata))
 
-package_file = os.path.join(run_dir, f"translate-{config['from']['code']}_{config['to']['code']}-{config['version'].replace('.', '_')}.argosmodel")
-if os.path.isfile(package_file):
-    os.unlink(package_file)
+shutil.copy(sp_model_path, package_folder)
+shutil.copytree(ct2_model_dir, os.path.join(package_folder, "model"))
+shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
 
 print(f"Writing {package_file}")
-with zipfile.ZipFile(package_file, 'w', compression=zipfile.ZIP_STORED) as zipf:
-    def add_file(f):
-        zipf.write(f, arcname=os.path.basename(f))
-
-    def add_folder(f):
-        for root, dirs, files in os.walk(f):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, f)
-                zipf.write(file_path, arcname=os.path.join(os.path.basename(f), arcname))
-
-    add_file(readme_file)
-    add_file(metadata_file)
-    add_file(sp_model_path)
-    add_folder(ct2_model_dir)
-    add_folder(stanza_dir)
-
+shutil.make_archive(os.path.join(run_dir, package_slug), 'zip', package_folder, package_slug)
+os.rename(os.path.join(run_dir, package_slug + ".zip"), package_file)
 print("Done!")
