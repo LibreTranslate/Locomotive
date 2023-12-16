@@ -444,11 +444,13 @@ shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
 
 print(f"Writing {package_file}")
 zip_filename = os.path.join(run_dir, f"{package_slug}.zip")
-with zipfile.ZipFile(zip_filename, 'w') as zipf:
-    for root, dirs, files in os.walk(package_folder):
+def zipdir(path, ziph):
+    for root, dirs, files in os.walk(path):
         for file in files:
-            file_path = os.path.join(root, file)
-            arcname = os.path.relpath(file_path, package_folder)
-            zipf.write(file_path, arcname=arcname)
+            ziph.write(os.path.join(root, file),
+                       os.path.relpath(os.path.join(root, file),
+                                       os.path.join(path, '..')))
+with zipfile.ZipFile(zip_filename, 'w') as zipf:
+    zipdir(package_folder, zipf)
 os.rename(zip_filename, package_file)
 print("Done!")
