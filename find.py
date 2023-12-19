@@ -35,7 +35,12 @@ for s in config['sources']:
         for f in [f.path for f in os.scandir(source_dir) if f.is_file()]:
             if "target" in f.lower():
                 target = f
+            elif f.lower().endswith(f".{config['to']['code']}"):
+                target = f
+
             if "source" in f.lower():
+                source = f
+            elif f.lower().endswith(f".{config['from']['code']}"):
                 source = f
 
         if source is not None and target is not None:
