@@ -15,7 +15,7 @@ import zipfile
 import ctranslate2
 from opus import get_opus_dataset_url
 from net import download
-from data import sources_changed, get_flores, extract_flores_val
+from data import sources_changed, merge_shuffle
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
@@ -84,11 +84,14 @@ os.makedirs(run_dir, exist_ok=True)
 sources = {}
 
 for s in config['sources']:
-    weight = 1
+    filters = []
+    transforms = []
+
     if isinstance(s, dict):
         if not "source" in s:
             print("Malformed source: {s}. A 'source' key is required.")
-        weight = s.get("weight", 1)
+        filters = s.get('filters', [])
+        transforms = s.get('transforms', [])
         s = s["source"]
 
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
@@ -117,7 +120,8 @@ for s in config['sources']:
                 'source': source,
                 'target': target,
                 'hash': md5,
-                'weight': weight,
+                'filters': filters,
+                'transforms': transforms,
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -175,13 +179,15 @@ for s in config['sources']:
         
         add_source_from(dataset_path)
 
-min_weight = float('inf')
 for k in sources:
-    min_weight = min(sources[k]['weight'], min_weight)
+    if config.get('filters'):
+        for f in reversed(config['filters']):
+            sources[k]['filters'].insert(0, f)
+    if config.get('transforms'):
+        for t in reversed(config['transforms']):
+            sources[k]['transforms'].insert(0, t)
 
-for k in sources:
-    sources[k]['weight'] = int(round(sources[k]['weight'] / min_weight, 0))
-    print(f" - {k} (hash:{sources[k]['hash'][:7]} | weight:{sources[k]['weight']})")
+    print(f" - {k} (hash:{sources[k]['hash'][:7]})")
 
 stanza_lang_code = config['from']['code']
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
@@ -194,8 +200,7 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             print(f'Cannot download stanza model: {str(e)}')
             exit(1)
 
-extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
-changed = sources_changed(sources, run_dir)
+changed = merge_shuffle(sources, run_dir)
 
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
@@ -223,7 +228,7 @@ if not os.path.isfile(sp_model_path) or changed:
 
 os.makedirs(onmt_dir, exist_ok=True)
 
-transforms = ['sentencepiece', 'filtertoolong']
+transforms = ['sentencepiece']
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
@@ -232,6 +237,12 @@ onmt_config = {
     'tgt_vocab_size': config.get('vocab_size', 50000),
     'share_vocab': True, 
     'data': {
+        'corpus_1': {
+            'path_src': f'{rel_run_dir}/src-train.txt',
+            'path_tgt': f'{rel_run_dir}/tgt-train.txt',
+            'transforms': transforms,
+            'weight': 1
+        },
         'valid': {
             'path_src': f'{rel_run_dir}/src-val.txt',
             'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
@@ -301,15 +312,6 @@ onmt_config = {
     'share_decoder_embeddings': True,
     'share_embeddings': True
 }
-
-# Populate data sources
-for s in sources:
-    onmt_config['data'][sources[s]['hash']] = {
-        'path_src': sources[s]['source'], 
-        'path_tgt': sources[s]['target'], 
-        'weight': sources[s]['weight'],
-        'transforms': transforms
-    }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
 if sys.platform == 'darwin' or no_gpu:
