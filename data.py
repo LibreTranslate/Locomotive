@@ -2,6 +2,7 @@ import random
 import os
 import hashlib
 from net import download
+import sentencepiece as spm
 
 nllb_langs = {
     "af":"afr_Latn",
@@ -194,11 +195,8 @@ def extract_flores_val(src_code, tgt_code, out_dir, dataset="dev"):
         with open(tgt_f, 'w', encoding='utf-8') as f:
             f.write("\n".join(tgt_val) + "\n")
         print(f"Wrote {tgt_f}")
-    
-def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
-    if not sources_changed(sources, out_dir):
-        return False
 
+def merge_shuffle(sources, out_dir, max_eval_sentences=5000, sp_model_file=None, max_length=150):
     data = []
     for k in sources:
         source = sources[k]['source']
@@ -221,6 +219,10 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 if line_s == line_t:
                     continue
                 
+                # Skip too long
+                if len(line_s) > max_length or len(line_t) > max_length:
+                    continue
+                
                 data.append((line_s, line_t))
         print(f"New sentence count: {len(data)}")
     
@@ -237,11 +239,21 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
     print("Writing sets")
     os.makedirs(out_dir, exist_ok=True)
     count = 0
-    with open(os.path.join(out_dir, "src-val.txt"), "w", encoding="utf-8") as fsv, \
-        open(os.path.join(out_dir, "tgt-val.txt"), "w", encoding="utf-8") as ftv, \
-        open(os.path.join(out_dir, "src-train.txt"), "w", encoding="utf-8") as fst, \
-        open(os.path.join(out_dir, "tgt-train.txt"), "w", encoding="utf-8") as ftt:
+    ext = "txt"
+    s = None
+    if sp_model_file:
+        ext = "sp"
+        s = spm.SentencePieceProcessor(model_file=sp_model_file, add_eos=True)
+
+    with open(os.path.join(out_dir, f"src-val.{ext}"), "w", encoding="utf-8") as fsv, \
+        open(os.path.join(out_dir, f"tgt-val.{ext}"), "w", encoding="utf-8") as ftv, \
+        open(os.path.join(out_dir, f"src-train.{ext}"), "w", encoding="utf-8") as fst, \
+        open(os.path.join(out_dir, f"tgt-train.{ext}"), "w", encoding="utf-8") as ftt:
         for source, target in data:
+            if s is not None:
+                source = " ".join(s.encode(source, out_type=str)) + "\n"
+                target = " ".join(s.encode(target, out_type=str)) + "\n"
+                
             if count < max_eval_sentences:
                 fsv.write(source)
                 ftv.write(target)

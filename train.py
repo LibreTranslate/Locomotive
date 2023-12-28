@@ -15,7 +15,7 @@ import zipfile
 import ctranslate2
 from opus import get_opus_dataset_url
 from net import download
-from data import sources_changed, get_flores, extract_flores_val
+from data import sources_changed, merge_shuffle
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
@@ -194,15 +194,14 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             print(f'Cannot download stanza model: {str(e)}')
             exit(1)
 
-extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
 changed = sources_changed(sources, run_dir)
-
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
+
 if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
             spm.SentencePieceTrainer.train(input=[sources[s]["source"] for s in sources] + [sources[s]["target"] for s in sources], 
-                                            model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
+                                            model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 32768),
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True)
@@ -221,62 +220,50 @@ if not os.path.isfile(sp_model_path) or changed:
                 print(err)
                 exit(1)
 
+if changed:
+    merge_shuffle(sources, run_dir, sp_model_file=sp_model_path)
+
 os.makedirs(onmt_dir, exist_ok=True)
 
-transforms = ['sentencepiece', 'filtertoolong']
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'tgt_vocab': f"{rel_onmt_dir}/openmt.vocab",
-    'src_vocab_size': config.get('vocab_size', 50000),
-    'tgt_vocab_size': config.get('vocab_size', 50000),
+    'src_vocab_size': config.get('vocab_size', 32768),
+    'tgt_vocab_size': config.get('vocab_size', 32768),
     'share_vocab': True, 
     'data': {
+        'corpus_1': {
+            'path_src': f'{rel_run_dir}/src-train.sp',
+            'path_tgt': f'{rel_run_dir}/tgt-train.sp',
+            'transforms': []
+        },
         'valid': {
-            'path_src': f'{rel_run_dir}/src-val.txt',
-            'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-            'transforms': transforms
+            'path_src': f'{rel_run_dir}/src-val.sp',
+            'path_tgt': f'{rel_run_dir}/tgt-val.sp', 
+            'transforms': []
         }
     }, 
-    'src_subword_type': 'sentencepiece',
-    'tgt_subword_type': 'sentencepiece',
-    'src_onmttok_kwargs': {
-        'mode': 'none',
-        'lang': config['from']['code'],
-    },
-    'tgt_onmttok_kwargs': {
-        'mode': 'none',
-        'lang': config['to']['code'],
-    },
-    'src_subword_model': f'{rel_run_dir}/sentencepiece.model', 
-    'tgt_subword_model': f'{rel_run_dir}/sentencepiece.model', 
-    'src_subword_nbest': 1, 
-    'src_subword_alpha': 0.0, 
-    'tgt_subword_nbest': 1, 
-    'tgt_subword_alpha': 0.0, 
-    'src_seq_length': 150, 
-    'tgt_seq_length': 150, 
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
-    'save_checkpoint_steps': 1000, 
-    'valid_steps': 2500, 
+    'save_checkpoint_steps': 5000, 
+    'valid_steps': 5000, 
     'train_steps': 50000, 
-    'early_stopping': 4, 
+    'early_stopping': 10, 
     'bucket_size': 262144, 
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
-    'queue_size': 10000,
     'batch_size': 4096,
-    'valid_batch_size': 128,
-    'max_generator_batches': 2, 
-    'accum_count': 8, 
-    'accum_steps': 0, 
+    'valid_batch_size': 2048,
+    'max_generator_batches': 0,
+    'accum_count': [4], 
+    'accum_steps': [0], 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
-    'learning_rate': 1,
-    'warmup_steps': 8000, 
+    'learning_rate': 2,
     'decay_method': 'noam', 
+    'warmup_steps': 50000,
     'adam_beta2': 0.998, 
     'max_grad_norm': 0, 
     'label_smoothing': 0.1, 
@@ -285,31 +272,20 @@ onmt_config = {
     'normalization': 'tokens', 
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
-    'position_encoding': False,
-    'max_relative_positions': 20,
-    'average_decay': 0.0001,
+    'position_encoding': True,
     'enc_layers': 6, 
     'dec_layers': 6,
     'heads': 8,
-    'hidden_size': 512, 
-    'rnn_size': 512,
+    'hidden_size': 512,
     'word_vec_size': 512, 
     'transformer_ff': 2048,
-    'dropout_steps': 0,
-    'dropout': 0.1,
-    'attention_dropout': 0.1,
-    'share_decoder_embeddings': True,
-    'share_embeddings': True
+    'dropout_steps': [0],
+    'dropout': [0.1],
+    'attention_dropout': [0.1],
+    'share_decoder_embeddings': False,
+    'share_embeddings': False,
+    'num_workers': 2
 }
-
-# Populate data sources
-for s in sources:
-    onmt_config['data'][sources[s]['hash']] = {
-        'path_src': sources[s]['source'], 
-        'path_tgt': sources[s]['target'], 
-        'weight': sources[s]['weight'],
-        'transforms': transforms
-    }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
 if sys.platform == 'darwin' or no_gpu:
@@ -420,6 +396,8 @@ subprocess.run([
         ct2_model_dir,
         "--quantization",
         "int8"])
+
+# TODO: update model/config.json to add EOS source
 
 # Create .argosmodel package
 package_slug = f"translate-{config['from']['code']}_{config['to']['code']}-{config['version'].replace('.', '_')}"
