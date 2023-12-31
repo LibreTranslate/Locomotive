@@ -240,14 +240,21 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         with open(source, "r", encoding="utf-8") as fs, \
              open(target, "r", encoding="utf-8") as ft:
              while True:
-                line_s = fs.readline().strip()
-                line_t = ft.readline().strip()
+                line_s = fs.readline()
+                line_t = ft.readline()
                 
-                # Always skip empty
+                # EOF
                 if len(line_s) == 0 or len(line_t) == 0:
                     break
                 
                 count += 1
+                line_s = line_s.strip()
+                line_t = line_t.strip()
+                
+                # Skip empty
+                if len(line_s) == 0 or len(line_t) == 0:
+                    continue
+                
                 skip = False
                 for f in filters:
                     if f(line_s, line_t):
