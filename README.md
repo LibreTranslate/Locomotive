@@ -148,7 +148,7 @@ The model is generated using sensible default values. You can override the [defa
 
 ### Using Filters and Transforms
 
-Locomotive provides various [filters](https://github.com/LibreTranslate/LibreTranslate/blob/main/FILTERS.md) and [transforms](https://github.com/LibreTranslate/LibreTranslate/blob/main/TRANSFORMS.md) which can be used to dynamically cleanup and modify the input sources before training: 
+Locomotive provides various [filters](https://github.com/LibreTranslate/Locomotive/blob/main/FILTERS.md) and [transforms](https://github.com/LibreTranslate/Locomotive/blob/main/TRANSFORMS.md) which can be used to dynamically cleanup and modify the input sources before training: 
 
 ```json
 {
