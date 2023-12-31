@@ -1,6 +1,6 @@
 def duplicates(src, tgt):
     """
-    Remove lines where source is the same as target
+    Remove lines when source is the same as target
     """
     return src == tgt
 
@@ -63,12 +63,12 @@ def nonalphanum_ratio(src, tgt, max = 0.4):
 
 def digits_sum_mismatch(src, tgt):
     """
-    Removes lines where the sum of the digits between source and target is not the same.
+    Removes lines when the sum of the digits between source and target is not the same.
     """
     return sum(int(num) for num in src if num.isdecimal()) != sum(int(num) for num in tgt if num.isdecimal())
 
 def nonalphanum_count_mismatch(src, tgt):
     """
-    Removes lines where the sum of non-alphanumeric characters between source and target is not the same
+    Removes lines when the sum of non-alphanumeric characters between source and target is not the same
     """
     return sum(1 for ch in src if not ch.isalnum()) !=  sum(1 for ch in tgt if not ch.isalnum())

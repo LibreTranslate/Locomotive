@@ -18,13 +18,13 @@ is greather than max.
  * max (float) : Maximum ratio (0.4)
 
 #### digits_sum_mismatch
-<code>Removes lines where the sum of the digits between source and target is not the same.</code>
+<code>Removes lines when the sum of the digits between source and target is not the same.</code>
 
 #### duplicates
-<code>Remove lines where source is the same as target</code>
+<code>Remove lines when source is the same as target</code>
 
 #### nonalphanum_count_mismatch
-<code>Removes lines where the sum of non-alphanumeric characters between source and target is not the same</code>
+<code>Removes lines when the sum of non-alphanumeric characters between source and target is not the same</code>
 
 #### nonalphanum_ratio
 <code>Removes lines when the ratio of non-alphanumeric characters to the total length of the line
