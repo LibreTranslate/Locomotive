@@ -2,6 +2,9 @@ import random
 import os
 import hashlib
 from net import download
+import filters as filter_funcs
+import transforms as transform_funcs
+from removedup import rdup
 
 nllb_langs = {
     "af":"afr_Latn",
@@ -195,7 +198,7 @@ def extract_flores_val(src_code, tgt_code, out_dir, dataset="dev"):
             f.write("\n".join(tgt_val) + "\n")
         print(f"Wrote {tgt_f}")
     
-def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
+def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=True):
     if not sources_changed(sources, out_dir):
         return False
 
@@ -203,25 +206,65 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
     for k in sources:
         source = sources[k]['source']
         target = sources[k]['target']
+
+        filters = []
+        transforms = []
+
+        for f in sources[k]['filters']:
+            if isinstance(f, dict):
+                func_name = list(f.keys())[0]
+                def get_func(name):
+                    kwargs = dict(f[name])
+                    func = getattr(filter_funcs, name)
+                    return lambda src, tgt: func(src, tgt, **kwargs)
+                filters.append(get_func(func_name))
+            else:
+                filters.append(getattr(filter_funcs, f))
+        
+        for t in sources[k]['transforms']:
+            if isinstance(t, dict):
+                func_name = list(t.keys())[0]
+                def get_func(name):
+                    kwargs = dict(t[name])
+                    func = getattr(transform_funcs, name)
+                    return lambda line: func(line, **kwargs)
+                transforms.append(get_func(func_name))
+            else:
+                transforms.append(getattr(transform_funcs, t))
+
         
         print(f"Reading {source} - {target}")
+        filtered = 0
+        count = 0
+
         with open(source, "r", encoding="utf-8") as fs, \
              open(target, "r", encoding="utf-8") as ft:
              while True:
-                line_s = fs.readline()
-                line_t = ft.readline()
-                if not line_s or not line_t:
+                line_s = fs.readline().strip()
+                line_t = ft.readline().strip()
+                
+                # Always skip empty
+                if len(line_s) == 0 or len(line_t) == 0:
                     break
                 
-                # Skip empty
-                if not line_s.strip():
-                    continue
-
-                # Skip duplicates
-                if line_s == line_t:
+                count += 1
+                skip = False
+                for f in filters:
+                    if f(line_s, line_t):
+                        skip = True
+                        break
+                
+                if skip:
+                    filtered += 1
                     continue
                 
-                data.append((line_s, line_t))
+                for t in transforms:
+                    line_s = t(line_s)
+                    line_t = t(line_t)
+                
+                data.append((line_s + '\n', line_t + '\n'))
+                
+        print(f"Filtered {filtered} lines out of {count}")
         print(f"New sentence count: {len(data)}")
     
     print("Shuffling")
@@ -250,6 +293,17 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 ftt.write(target)
 
             count += 1
+    
+    if remove_duplicates:
+        print("Removing duplicates")
+        source = os.path.join(out_dir, "src-train.txt")
+        target = os.path.join(out_dir, "tgt-train.txt")
+        src, tgt, removed = rdup(source, target)
+        print(f"Removed {removed} lines")
+        os.unlink(source)
+        os.unlink(target)
+        os.rename(src, source)
+        os.rename(tgt, target)
     
     return True
     

@@ -86,7 +86,7 @@ The output will be saved in `run/[model]/translate-[from]_[to]-[version].argosmo
 
 ### Running out of memory
 
-If you're running out of CUDA memory, decrease the `batch_size` parameter, which by default is set to `8192`:
+If you're running out of CUDA memory, decrease the `batch_size` parameter, which by default is set to `4096`:
 
 ```json
 {
@@ -146,20 +146,31 @@ The model is generated using sensible default values. You can override the [defa
 }
 ```
 
-### Using Weights
+### Using Filters and Transforms
 
-It's possible to specify weights for each source, for example, it's possible to instruct the training to use less samples for certain datasets:
+Locomotive provides various [filters](https://github.com/LibreTranslate/LibreTranslate/blob/main/FILTERS.md) and [transforms](https://github.com/LibreTranslate/LibreTranslate/blob/main/TRANSFORMS.md) which can be used to dynamically cleanup and modify the input sources before training: 
 
 ```json
 {
+    "filters": [
+        "duplicates", 
+        {"source_target_ratio": {"min": 0.6, "max": 1.5}}
+    ],
+    "transforms":[
+        "remove_unpaired_quotes_and_brackets"
+    ],
     "sources": [
-        {"source": "file://D:\\path\\to\\mydataset-en_es", "weight": 0.5},
-        {"source": "http://data.argosopentech.com/data-ccaligned-en_es.argosdata", "weight": 1},
+        {
+            "source": "file://D:\\path\\to\\mydataset-en_es", 
+            "filters": [
+                {"char_length": {"min": 20}}
+            ]
+        }
     ]
 }
 ```
 
-In the example above, twice as many samples will be taken from the CCAligned dataset compared to mydataset.
+Filters can be specified globally (applied to all sources) as well as per-source (applied only to the specified source).
 
 ## Evaluate
 
