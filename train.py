@@ -228,7 +228,7 @@ if not os.path.isfile(sp_model_path) or changed:
 
 os.makedirs(onmt_dir, exist_ok=True)
 
-transforms = ['sentencepiece']
+transforms = ['sentencepiece', 'filtertoolong']
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
@@ -281,7 +281,7 @@ onmt_config = {
     'batch_size': 4096,
     'valid_batch_size': 128,
     'max_generator_batches': 2, 
-    'accum_count': 8, 
+    'accum_count': 4, 
     'accum_steps': 0, 
     'model_dtype': 'fp16', 
     'optim': 'adam', 

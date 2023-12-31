@@ -1,5 +1,8 @@
 
 def remove_unpaired_quotes_and_brackets(line):
+    """
+    Removes unmatched quotations (“, ”, ", «, ») and parentheses ((, ), [, ], {, }) 
+    """
     # Deleting unpaired quotation marks
     if (line.count('“') + line.count('”')) % 2 != 0:
         line = line.replace('“', '')
@@ -30,6 +33,11 @@ def remove_unpaired_quotes_and_brackets(line):
     return line
 
 def remove_chars(line, chars = []):
+    """
+    Remove these characters or words
+
+    :param list(str)|str chars: List of characters or words
+    """
     for c in chars:
         line = line.replace(c, '')
     return line

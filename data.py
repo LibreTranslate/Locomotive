@@ -4,6 +4,7 @@ import hashlib
 from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
+from removedup import rdup
 
 nllb_langs = {
     "af":"afr_Latn",
@@ -197,9 +198,9 @@ def extract_flores_val(src_code, tgt_code, out_dir, dataset="dev"):
             f.write("\n".join(tgt_val) + "\n")
         print(f"Wrote {tgt_f}")
     
-def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
-    # if not sources_changed(sources, out_dir):
-    #     return False
+def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=True):
+    if not sources_changed(sources, out_dir):
+        return False
 
     data = []
     for k in sources:
@@ -233,6 +234,9 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
 
         
         print(f"Reading {source} - {target}")
+        filtered = 0
+        count = 0
+
         with open(source, "r", encoding="utf-8") as fs, \
              open(target, "r", encoding="utf-8") as ft:
              while True:
@@ -242,15 +246,16 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 # Always skip empty
                 if len(line_s) == 0 or len(line_t) == 0:
                     break
-
+                
+                count += 1
                 skip = False
                 for f in filters:
                     if f(line_s, line_t):
                         skip = True
-                        print(line_s, line_t)
                         break
                 
                 if skip:
+                    filtered += 1
                     continue
                 
                 for t in transforms:
@@ -258,6 +263,8 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                     line_t = t(line_t)
                 
                 data.append((line_s + '\n', line_t + '\n'))
+                
+        print(f"Filtered {filtered} lines out of {count}")
         print(f"New sentence count: {len(data)}")
     
     print("Shuffling")
@@ -286,6 +293,17 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000):
                 ftt.write(target)
 
             count += 1
+    
+    if remove_duplicates:
+        print("Removing duplicates")
+        source = os.path.join(out_dir, "src-train.txt")
+        target = os.path.join(out_dir, "tgt-train.txt")
+        src, tgt, removed = rdup(source, target)
+        print(f"Removed {removed} lines")
+        os.unlink(source)
+        os.unlink(target)
+        os.rename(src, source)
+        os.rename(tgt, target)
     
     return True
     
