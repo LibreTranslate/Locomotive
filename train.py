@@ -377,7 +377,7 @@ if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.r
         cmd += ["--tensorboard", "--tensorboard_log_dir", log_dir]
     
     # Resume?
-    checkpoints = sorted(glob.glob(os.path.join(onmt_dir, "*.pt")))
+    checkpoints = list(sorted(glob.glob(os.path.join(onmt_dir, "*.pt")), key=lambda x: int(re.findall('\d+', x)[0])))
     if len(checkpoints) > 0 and not changed:
         print(f"Resuming from {checkpoints[-1]}")
         cmd += ["--train_from", checkpoints[-1]]
@@ -386,7 +386,7 @@ if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.r
 
 # Average
 average_checkpoint = os.path.join(run_dir, "averaged.pt")
-checkpoints = sorted(glob.glob(os.path.join(onmt_dir, "*.pt")))
+checkpoints = list(sorted(glob.glob(os.path.join(onmt_dir, "*.pt")), key=lambda x: int(re.findall('\d+', x)[0])))
 print(f"Total checkpoints: {len(checkpoints)}")
 
 if len(checkpoints) == 0:
