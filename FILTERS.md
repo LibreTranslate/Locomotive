@@ -15,7 +15,7 @@
 <code>Removes lines when the ratio of numerical characters to the total length of the line
 is greather than max.
 </code>
- * max (float) : Maximum ratio ( 0.4)
+ * max (float) : Maximum ratio (0.4)
 
 #### digits_sum_mismatch
 <code>Removes lines where the sum of the digits between source and target is not the same.</code>
@@ -30,7 +30,7 @@ is greather than max.
 <code>Removes lines when the ratio of non-alphanumeric characters to the total length of the line
 is greather than max.
 </code>
- * max (float) : Maximum ratio ( 0.4)
+ * max (float) : Maximum ratio (0.4)
 
 #### source_target_ratio
 <code>Removes lines when the ratio (len(source) / len(target)) is outside of bounds
