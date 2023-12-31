@@ -26,7 +26,7 @@ def source_target_ratio(src, tgt, min = 0, max = float("inf")):
 
 def uppercase_count_mismatch(src, tgt):
     """
-    Removes lines that have a different number of uppercase letters
+    Removes lines when source and target have a different number of uppercase letters
     """
     return sum(1 for ch in src if ch.isupper()) !=  sum(1 for ch in tgt if ch.isupper())
 

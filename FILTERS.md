@@ -39,5 +39,5 @@ is greather than max.
  * max (float) : Upper bound (inclusive)
 
 #### uppercase_count_mismatch
-<code>Removes lines that have a different number of uppercase letters</code>
+<code>Removes lines when source and target have a different number of uppercase letters</code>
 
