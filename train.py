@@ -347,6 +347,10 @@ if not os.path.isfile(onmt_vocab_file):
     sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
+def get_checkpoints():
+    chkpts = [cp for cp in glob.glob(os.path.join(onmt_dir, "*.pt")) if "averaged.pt" not in cp]
+    return list(sorted(chkpts, key=lambda x: int(re.findall('\d+', x)[0])))
+
 if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.rerun_onmt:
     cmd = ["onmt_train", "-config", onmt_config_path]
 
@@ -377,7 +381,7 @@ if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.r
         cmd += ["--tensorboard", "--tensorboard_log_dir", log_dir]
     
     # Resume?
-    checkpoints = list(sorted(glob.glob(os.path.join(onmt_dir, "*.pt")), key=lambda x: int(re.findall('\d+', x)[0])))
+    checkpoints = get_checkpoints()
     if len(checkpoints) > 0 and not changed:
         print(f"Resuming from {checkpoints[-1]}")
         cmd += ["--train_from", checkpoints[-1]]
@@ -386,7 +390,7 @@ if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.r
 
 # Average
 average_checkpoint = os.path.join(run_dir, "averaged.pt")
-checkpoints = list(sorted(glob.glob(os.path.join(onmt_dir, "*.pt")), key=lambda x: int(re.findall('\d+', x)[0])))
+checkpoints = get_checkpoints()
 print(f"Total checkpoints: {len(checkpoints)}")
 
 if len(checkpoints) == 0:
