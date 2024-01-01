@@ -24,7 +24,7 @@ is greather than max.
 <code>Remove lines when source is the same as target</code>
 
 #### nonalphanum_count_mismatch
-<code>Removes lines when the sum of non-alphanumeric characters between source and target is not the same</code>
+<code>Removes lines when the sum of non-alphanumeric characters (except spaces) between source and target is not the same</code>
 
 #### nonalphanum_ratio
 <code>Removes lines when the ratio of non-alphanumeric characters to the total length of the line

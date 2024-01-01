@@ -216,7 +216,9 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 def get_func(name):
                     kwargs = dict(f[name])
                     func = getattr(filter_funcs, name)
-                    return lambda src, tgt: func(src, tgt, **kwargs)
+                    lam = lambda src, tgt: func(src, tgt, **kwargs)
+                    lam.__name__ = name
+                    return lam 
                 filters.append(get_func(func_name))
             else:
                 filters.append(getattr(filter_funcs, f))
@@ -227,14 +229,16 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 def get_func(name):
                     kwargs = dict(t[name])
                     func = getattr(transform_funcs, name)
-                    return lambda line: func(line, **kwargs)
+                    lam = lambda line: func(line, **kwargs)
+                    lam.__name__ = name
+                    return lam
                 transforms.append(get_func(func_name))
             else:
                 transforms.append(getattr(transform_funcs, t))
 
         
         print(f"Reading {source} - {target}")
-        filtered = 0
+        filtered = {}
         count = 0
 
         with open(source, "r", encoding="utf-8") as fs, \
@@ -259,10 +263,10 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 for f in filters:
                     if f(line_s, line_t):
                         skip = True
+                        filtered[f.__name__] = filtered.get(f.__name__, 0) + 1
                         break
                 
                 if skip:
-                    filtered += 1
                     continue
                 
                 for t in transforms:
@@ -270,8 +274,8 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     line_t = t(line_t)
                 
                 data.append((line_s + '\n', line_t + '\n'))
-                
-        print(f"Filtered {filtered} lines out of {count}")
+        print(filtered)
+        print(f"Filtered {sum(filtered.values())} lines out of {count}")
         print(f"New sentence count: {len(data)}")
     
     print("Shuffling")

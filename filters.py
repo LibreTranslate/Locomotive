@@ -58,8 +58,8 @@ def nonalphanum_ratio(src, tgt, max = 0.4):
 
     :param float max: Maximum ratio (default: 0.4)
     """
-    return len([c for c in src if not c.isalnum()]) / len(src) >= max or \
-                len([c for c in tgt if not c.isalnum()]) / len(tgt) >= max
+    return len([c for c in src if c != ' ' and (not c.isalnum())]) / len(src) >= max or \
+                len([c for c in tgt if c != ' ' and (not c.isalnum())]) / len(tgt) >= max
 
 def digits_sum_mismatch(src, tgt):
     """
@@ -67,8 +67,9 @@ def digits_sum_mismatch(src, tgt):
     """
     return sum(int(num) for num in src if num.isdecimal()) != sum(int(num) for num in tgt if num.isdecimal())
 
+
 def nonalphanum_count_mismatch(src, tgt):
     """
-    Removes lines when the sum of non-alphanumeric characters between source and target is not the same
+    Removes lines when the sum of non-alphanumeric characters (except spaces) between source and target is not the same
     """
-    return sum(1 for ch in src if not ch.isalnum()) !=  sum(1 for ch in tgt if not ch.isalnum())
+    return sum(1 for ch in src if ch != " " and (not ch.isalnum())) != sum(1 for ch in tgt if ch != " " and (not ch.isalnum()))
