@@ -269,7 +269,7 @@ onmt_config = {
     'tgt_seq_length': 150, 
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
-    'save_checkpoint_steps': 1000, 
+    'save_checkpoint_steps': 2500, 
     'valid_steps': 2500, 
     'train_steps': 50000, 
     'early_stopping': 4, 
@@ -279,7 +279,7 @@ onmt_config = {
     'batch_type': 'tokens', 
     'queue_size': 10000,
     'batch_size': 4096,
-    'valid_batch_size': 128,
+    'valid_batch_size': 2048,
     'max_generator_batches': 2, 
     'accum_count': 4, 
     'accum_steps': 0, 
@@ -411,7 +411,6 @@ else:
         avg_num = min(config.get('avg_checkpoints', 1), len(checkpoints))
         print(f"Averaging {avg_num} models")
         average_models(checkpoints[-avg_num:], average_checkpoint)
-
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")
 if os.path.isdir(ct2_model_dir):
