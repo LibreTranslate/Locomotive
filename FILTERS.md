@@ -6,6 +6,11 @@
  * min (int) : Minimum length (inclusive)
  * max (int) : Maximum length (inclusive)
 
+#### characters_count_mismatch
+<code>Removes lines when the sum of certain characters between source and target is not the same.
+</code>
+ * chars (str) : Characters to check (()[]?!:."“”{})
+
 #### contains
 <code>Removes lines that contain these words
 </code>

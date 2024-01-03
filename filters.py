@@ -73,3 +73,14 @@ def nonalphanum_count_mismatch(src, tgt):
     Removes lines when the sum of non-alphanumeric characters (except spaces) between source and target is not the same
     """
     return sum(1 for ch in src if ch != " " and (not ch.isalnum())) != sum(1 for ch in tgt if ch != " " and (not ch.isalnum()))
+
+def characters_count_mismatch(src, tgt, chars = '()[]?!:."“”{}'):
+    """
+    Removes lines when the sum of certain characters between source and target is not the same.
+
+    :param str chars: Characters to check (default: ()[]?!:."“”{})
+    """
+    for ch in chars:
+        if src.count(ch) != tgt.count(ch):
+            return True
+    return False
