@@ -206,9 +206,9 @@ sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
-            spm.SentencePieceTrainer.train(input=[sources[s]["source"] for s in sources] + [sources[s]["target"] for s in sources], 
+            spm.SentencePieceTrainer.train(input=[os.path.join(run_dir, "src-train.txt"), os.path.join(run_dir, "tgt-train.txt")], 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
-                                            character_coverage=config.get('character_coverage', 1.0),
+                                            character_coverage=config.get('character_coverage', 0.9995),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True)
             break
@@ -278,10 +278,10 @@ onmt_config = {
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
     'queue_size': 10000,
-    'batch_size': 4096,
+    'batch_size': 8192,
     'valid_batch_size': 2048,
     'max_generator_batches': 2, 
-    'accum_count': 4, 
+    'accum_count': 8, 
     'accum_steps': 0, 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
