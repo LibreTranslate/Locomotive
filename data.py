@@ -274,8 +274,6 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     if f(line_s, line_t):
                         skip = True
                         filtered[f.__name__] = filtered.get(f.__name__, 0) + 1
-                        if f.__name__ == "first_char_mismatch":
-                            print(line_s, line_t)
                         break
                 
                 if skip:
