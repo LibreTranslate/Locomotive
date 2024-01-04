@@ -11,6 +11,7 @@ import filters as filter_funcs
 import transforms as transform_funcs
 from removedup import rdup
 from fastshuffle import file_shuffle_sample
+from io import StringIO
 
 nllb_langs = {
     "af":"afr_Latn",
@@ -296,10 +297,18 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         with open(os.path.join(out_dir, "src.txt"), "w", encoding="utf-8") as src, \
              open(os.path.join(out_dir, "tgt.txt"), "w", encoding="utf-8") as tgt:
              while True:
-                if lines:
-                    l = lines.popleft()
-                    src.write(l[0])
-                    tgt.write(l[1])
+                count = len(lines)
+                if count > 0:
+                    sbuf = StringIO()
+                    tbuf = StringIO()
+
+                    for x in range(count):
+                        l = lines.pop()
+                        sbuf.write(l[0])
+                        tbuf.write(l[1])
+
+                    src.write(sbuf.getvalue())
+                    tgt.write(tbuf.getvalue())
                 elif finished:
                     break
                 else:
@@ -310,7 +319,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
 
     with ThreadPoolExecutor() as executor:
         executor.map(process_source, list(sources.keys()))    
-        finished = True
+    finished = True
     writer.join()
 
     if total_count * 0.2 < max_eval_sentences:
