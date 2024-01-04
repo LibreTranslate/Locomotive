@@ -84,3 +84,18 @@ def characters_count_mismatch(src, tgt, chars = '()[]?!:."“”{}'):
         if src.count(ch) != tgt.count(ch):
             return True
     return False
+
+def first_char_mismatch(src, tgt):
+    """
+    Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.
+    """
+    if src[0].isalpha():
+        if tgt[0].isalpha():
+            return src[0].isupper() != tgt[0].isupper()
+        else:
+            return True
+    elif tgt[0].isalpha():
+        return True
+    else:
+        return src[0] != tgt[0]
+    

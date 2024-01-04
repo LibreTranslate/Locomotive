@@ -28,6 +28,9 @@ is greather than max.
 #### duplicates
 <code>Remove lines when source is the same as target</code>
 
+#### first_char_mismatch
+<code>Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.</code>
+
 #### nonalphanum_count_mismatch
 <code>Removes lines when the sum of non-alphanumeric characters (except spaces) between source and target is not the same</code>
 
