@@ -32,6 +32,7 @@ def remove_unpaired_quotes_and_brackets(line):
             line = line.replace('}', '', 1)
     return line
 
+
 def remove_chars(line, chars = []):
     """
     Remove these characters or words

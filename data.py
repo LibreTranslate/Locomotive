@@ -1,10 +1,16 @@
 import random
 import os
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
+import mmap
+import time
+from collections import deque
+import threading
 from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
 from removedup import rdup
+from fastshuffle import file_shuffle_sample
 
 nllb_langs = {
     "af":"afr_Latn",
@@ -202,8 +208,11 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     if not sources_changed(sources, out_dir):
         return False
 
-    data = []
-    for k in sources:
+    lines = deque()
+    total_count = 0
+
+    def process_source(k):
+        nonlocal total_count
         source = sources[k]['source']
         target = sources[k]['target']
 
@@ -241,16 +250,17 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         filtered = {}
         count = 0
 
-        with open(source, "r", encoding="utf-8") as fs, \
-             open(target, "r", encoding="utf-8") as ft:
-             while True:
-                line_s = fs.readline()
-                line_t = ft.readline()
-                
-                # EOF
-                if len(line_s) == 0 or len(line_t) == 0:
-                    break
-                
+        with open(source, "r+b") as src_fp, \
+             open(target, "r+b") as tgt_fp:
+            src_mm = mmap.mmap(src_fp.fileno(), 0)
+            tgt_mm = mmap.mmap(tgt_fp.fileno(), 0)
+            src_it = iter(src_mm.readline, b"")
+            tgt_it = iter(tgt_mm.readline, b"")
+
+            for src_line in src_it:
+                line_s = src_line.decode("utf-8")
+                line_t = next(tgt_it).decode("utf-8")
+
                 count += 1
                 line_s = line_s.strip()
                 line_t = line_t.strip()
@@ -273,37 +283,51 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     line_s = t(line_s)
                     line_t = t(line_t)
                 
-                data.append((line_s + '\n', line_t + '\n'))
+                lines.append((line_s + '\n', line_t + '\n'))
+
         print(filtered)
         print(f"Filtered {sum(filtered.values())} lines out of {count}")
-        print(f"New sentence count: {len(data)}")
-    
-    print("Shuffling")
-    random.shuffle(data)
+        total_count += count
+        print(f"New sentence count: {total_count}")
 
-    if len(data) * 0.2 < max_eval_sentences:
-        max_eval_sentences = len(data) * 0.2
+    finished = False
 
-    print(f"Training size: {len(data) - max_eval_sentences}")
+    def write_lines():
+        with open(os.path.join(out_dir, "src.txt"), "w", encoding="utf-8") as src, \
+             open(os.path.join(out_dir, "tgt.txt"), "w", encoding="utf-8") as tgt:
+             while True:
+                if lines:
+                    l = lines.popleft()
+                    src.write(l[0])
+                    tgt.write(l[1])
+                elif finished:
+                    break
+                else:
+                    time.sleep(0.2)
+
+    writer = threading.Thread(target=write_lines)
+    writer.start()
+
+    with ThreadPoolExecutor() as executor:
+        executor.map(process_source, list(sources.keys()))    
+        finished = True
+    writer.join()
+
+    if total_count * 0.2 < max_eval_sentences:
+        max_eval_sentences = total_count * 0.2
+    max_eval_sentences = int(max_eval_sentences)
+
+    print(f"Training size: {total_count - max_eval_sentences}")
     print(f"Validation size: {max_eval_sentences}")
 
-    # TODO: can this be faster?
-    print("Writing sets")
+    print("Writing shuffled sets")
     os.makedirs(out_dir, exist_ok=True)
-    count = 0
-    with open(os.path.join(out_dir, "src-val.txt"), "w", encoding="utf-8") as fsv, \
-        open(os.path.join(out_dir, "tgt-val.txt"), "w", encoding="utf-8") as ftv, \
-        open(os.path.join(out_dir, "src-train.txt"), "w", encoding="utf-8") as fst, \
-        open(os.path.join(out_dir, "tgt-train.txt"), "w", encoding="utf-8") as ftt:
-        for source, target in data:
-            if count < max_eval_sentences:
-                fsv.write(source)
-                ftv.write(target)
-            else:
-                fst.write(source)
-                ftt.write(target)
 
-            count += 1
+    src, tgt, src_sample, tgt_sample = file_shuffle_sample(os.path.join(out_dir, "src.txt"), os.path.join(out_dir, "tgt.txt"), max_eval_sentences)
+    os.rename(src, os.path.join(out_dir, "src-train.txt"))
+    os.rename(tgt, os.path.join(out_dir, "tgt-train.txt"))
+    os.rename(src_sample, os.path.join(out_dir, "src-val.txt"))
+    os.rename(tgt_sample, os.path.join(out_dir, "tgt-val.txt"))
     
     if remove_duplicates:
         print("Removing duplicates")
@@ -315,7 +339,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         os.unlink(target)
         os.rename(src, source)
         os.rename(tgt, target)
-    
+
     return True
     
 
