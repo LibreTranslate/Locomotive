@@ -8,7 +8,7 @@ requests==2.31.0
 PyYAML==6.0.1
 sacrebleu==2.3.1
 subword-nmt>=0.3.7
-OpenNMT-py==3.4
+OpenNMT-py==3.4.1
 tensorboard==2.14.0
 six==1.16.0
 iso639==0.1.4

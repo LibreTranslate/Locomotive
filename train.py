@@ -283,11 +283,11 @@ onmt_config = {
     'max_generator_batches': 2, 
     'accum_count': 4, 
     'accum_steps': 0, 
-    'model_dtype': 'fp32', 
+    'model_dtype': 'fp16', 
     'optim': 'adam', 
     'learning_rate': 2,
-    'warmup_steps': 8000, 
-    'decay_method': 'noam', 
+    'warmup_steps': 16000, 
+    'decay_method': 'rsqrt', 
     'adam_beta2': 0.998, 
     'max_grad_norm': 0, 
     'label_smoothing': 0.1, 
@@ -309,7 +309,8 @@ onmt_config = {
     'dropout': 0.1,
     'attention_dropout': 0.1,
     'share_decoder_embeddings': True,
-    'share_embeddings': True
+    'share_embeddings': True,
+    'valid_metrics': ['BLEU'],
 }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
