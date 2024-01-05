@@ -303,7 +303,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     tbuf = StringIO()
 
                     for x in range(count):
-                        l = lines.pop()
+                        l = lines.popleft()
                         sbuf.write(l[0])
                         tbuf.write(l[1])
 
@@ -348,6 +348,9 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         os.unlink(target)
         os.rename(src, source)
         os.rename(tgt, target)
+
+    os.unlink(os.path.join(out_dir, "src.txt"))
+    os.unlink(os.path.join(out_dir, "tgt.txt"))
 
     return True
     
