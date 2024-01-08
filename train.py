@@ -286,7 +286,7 @@ onmt_config = {
     'accum_steps': 0, 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
-    'learning_rate': 0.5,
+    'learning_rate': 0.1,
     'warmup_steps': 16000, 
     'decay_method': 'rsqrt', 
     'adam_beta2': 0.998, 
