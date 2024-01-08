@@ -16,14 +16,14 @@
 </code>
  * words (list(str)) : List of words
 
+#### digits_mismatch
+<code>Removes lines when there are digits in source and not in target, or vice-versa</code>
+
 #### digits_ratio
 <code>Removes lines when the ratio of numerical characters to the total length of the line
 is greather than max.
 </code>
  * max (float) : Maximum ratio (0.4)
-
-#### digits_sum_mismatch
-<code>Removes lines when the sum of the digits between source and target is not the same.</code>
 
 #### duplicates
 <code>Remove lines when source is the same as target</code>

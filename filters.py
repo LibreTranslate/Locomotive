@@ -61,12 +61,13 @@ def nonalphanum_ratio(src, tgt, max = 0.4):
     return len([c for c in src if c != ' ' and (not c.isalnum())]) / len(src) >= max or \
                 len([c for c in tgt if c != ' ' and (not c.isalnum())]) / len(tgt) >= max
 
-def digits_sum_mismatch(src, tgt):
+def digits_mismatch(src, tgt):
     """
-    Removes lines when the sum of the digits between source and target is not the same.
+    Removes lines when there are digits in source and not in target, or vice-versa
     """
-    return sum(int(num) for num in src if num.isdecimal()) != sum(int(num) for num in tgt if num.isdecimal())
-
+    s = sum(int(num) for num in src if num.isdecimal())
+    t = sum(int(num) for num in tgt if num.isdecimal())
+    return (s == 0 and t > 0) or (t == 0 and s > 0)
 
 def nonalphanum_count_mismatch(src, tgt):
     """
