@@ -338,8 +338,10 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     writer = threading.Thread(target=write_lines)
     writer.start()
 
-    with ThreadPoolExecutor() as executor:
-        executor.map(process_source, list(sources.keys()))    
+    for s in sources:
+        process_source(s)
+    # with ThreadPoolExecutor() as executor:
+    #     executor.map(process_source, list(sources.keys()))    
     finished = True
     writer.join()
 

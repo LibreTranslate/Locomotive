@@ -92,6 +92,7 @@ for s in config['sources']:
             print("Malformed source: {s}. A 'source' key is required.")
         filters = s.get('filters', [])
         transforms = s.get('transforms', [])
+        augmenters = s.get('augmenters', [])
         s = s["source"]
 
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
@@ -122,6 +123,7 @@ for s in config['sources']:
                 'hash': md5,
                 'filters': filters,
                 'transforms': transforms,
+                'augmenters': augmenters,
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -186,6 +188,9 @@ for k in sources:
     if config.get('transforms'):
         for t in reversed(config['transforms']):
             sources[k]['transforms'].insert(0, t)
+    if config.get('augmenters'):
+        for a in reversed(config['augmenters']):
+            sources[k]['augmenters'].insert(0, a)
 
     print(f" - {k} (hash:{sources[k]['hash'][:7]})")
 
