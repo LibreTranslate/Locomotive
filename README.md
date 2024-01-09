@@ -148,7 +148,7 @@ The model is generated using sensible default values. You can override the [defa
 
 ### Using Filters and Transforms
 
-Locomotive provides various [filters](https://github.com/LibreTranslate/Locomotive/blob/main/FILTERS.md) and [transforms](https://github.com/LibreTranslate/Locomotive/blob/main/TRANSFORMS.md) which can be used to dynamically cleanup and modify the input sources before training: 
+Locomotive provides various [filters](https://github.com/LibreTranslate/Locomotive/blob/main/FILTERS.md), [transforms](https://github.com/LibreTranslate/Locomotive/blob/main/TRANSFORMS.md) and [augmenters](https://github.com/LibreTranslate/Locomotive/blob/main/AUGMENTERS.md)  which can be used to dynamically cleanup, modify and augment the input sources before training: 
 
 ```json
 {
@@ -158,6 +158,9 @@ Locomotive provides various [filters](https://github.com/LibreTranslate/Locomoti
     ],
     "transforms":[
         "remove_unpaired_quotes_and_brackets"
+    ],
+    "augmenters":[
+        "single_word_punctuation"
     ],
     "sources": [
         {
@@ -170,7 +173,7 @@ Locomotive provides various [filters](https://github.com/LibreTranslate/Locomoti
 }
 ```
 
-Filters can be specified globally (applied to all sources) as well as per-source (applied only to the specified source).
+Filters, transforms and augmenters can be specified globally (applied to all sources) as well as per-source (applied only to the specified source).
 
 ## Evaluate
 

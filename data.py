@@ -9,6 +9,7 @@ import threading
 from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
+import augmenters as augment_funcs
 from removedup import rdup
 from fastshuffle import file_shuffle_sample
 from io import StringIO
@@ -219,6 +220,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
 
         filters = []
         transforms = []
+        augmenters = []
 
         for f in sources[k]['filters']:
             if isinstance(f, dict):
@@ -239,17 +241,31 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 def get_func(name):
                     kwargs = dict(t[name])
                     func = getattr(transform_funcs, name)
-                    lam = lambda line: func(line, **kwargs)
+                    lam = lambda src, tgt: func(src, tgt, **kwargs)
                     lam.__name__ = name
                     return lam
                 transforms.append(get_func(func_name))
             else:
                 transforms.append(getattr(transform_funcs, t))
 
-        
+        for a in sources[k]['augmenters']:
+            if isinstance(a, dict):
+                func_name = list(a.keys())[0]
+                def get_func(name):
+                    kwargs = dict(a[name])
+                    func = getattr(augment_funcs, name)
+                    lam = lambda src, tgt: func(src, tgt, **kwargs)
+                    lam.__name__ = name
+                    return lam
+                augmenters.append(get_func(func_name))
+            else:
+                augmenters.append(getattr(augment_funcs, a))
+
+
         print(f"Reading {source} - {target}")
         filtered = {}
         count = 0
+        augmented = 0
 
         with open(source, "r+b") as src_fp, \
              open(target, "r+b") as tgt_fp:
@@ -281,14 +297,19 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     continue
                 
                 for t in transforms:
-                    line_s = t(line_s)
-                    line_t = t(line_t)
+                    line_s, line_t = t(line_s, line_t)
                 
                 lines.append((line_s + '\n', line_t + '\n'))
 
+                for a in augmenters:
+                    for a_src, a_tgt in a(line_s, line_t):
+                        lines.append((a_src + '\n', a_tgt + '\n'))
+                        augmented += 1
+
         print(filtered)
         print(f"Filtered {sum(filtered.values())} lines out of {count}")
-        total_count += count
+        print(f"Augmented {augmented}")
+        total_count += count + augmented
         print(f"New sentence count: {total_count}")
 
     finished = False
