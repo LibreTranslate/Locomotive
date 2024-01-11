@@ -234,6 +234,14 @@ To install the resulting .argosmodel file, locate the `~/.local/share/argos-tran
 
 Extract the contents of the .argosmodel file (which is just a .zip file, you might need to change the extension to .zip) into this folder. Then restart LibreTranslate.
 
+You can also install .argosmodel packages from Python:
+```
+import pathlib
+import argostranslate.package
+package_path = pathlib.Path("/root/translate-en_it-2_0.argosmodel")
+argostranslate.package.install_from_path(package_path)
+```
+
 ## Credits
 
 In no particular order, we'd like to thank:
