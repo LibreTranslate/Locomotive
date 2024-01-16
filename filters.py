@@ -1,3 +1,11 @@
+def top(src, tgt, percent):
+    """
+    Only add the top X% lines from the dataset
+
+    :param float percent: Percentage of dataset to include
+    """
+    return False # placeholder
+
 def duplicates(src, tgt):
     """
     Remove lines when source is the same as target

@@ -46,6 +46,11 @@ is greather than max.
  * min (float) : Lower bound (inclusive)
  * max (float) : Upper bound (inclusive)
 
+#### top
+<code>Only add the top X% lines from the dataset
+</code>
+ * percent (float) : Percentage of dataset to include
+
 #### uppercase_count_mismatch
 <code>Removes lines when source and target have a different number of uppercase letters</code>
 

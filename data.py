@@ -140,6 +140,17 @@ nllb_langs = {
     "pa":"pan_Guru"
 }
 
+def count_lines(file):
+    def blocks(files, size=65536):
+        while True:
+            b = files.read(size)
+            if not b: break
+            yield b
+
+    with open(file, "r",encoding="utf-8",errors='ignore') as f:
+        return sum(bl.count("\n") for bl in blocks(f))
+
+
 def sources_changed(sources, out_dir):
     merge_hash_file = os.path.join(out_dir, "merge-hash.txt")
     sources_hash = hashlib.md5("|".join(sorted([k for k in sources])).encode('utf-8')).hexdigest()
@@ -238,6 +249,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     func = getattr(filter_funcs, name)
                     lam = lambda src, tgt: func(src, tgt, **kwargs)
                     lam.__name__ = name
+                    lam.__args__ = kwargs
                     return lam 
                 filters.append(get_func(func_name))
             else:
@@ -274,6 +286,15 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         filtered = {}
         count = 0
         augmented = 0
+        stop_at = None
+        line_count = None
+
+        for f in filters:
+            if f.__name__ == "top":
+                line_count = count_lines(source)
+                print(f"Line count: {line_count}")
+                stop_at = int((f.__args__.get("percent", 100) / 100) * line_count)
+                print(f"Stop at: {stop_at}")
 
         with open(source, "r+b") as src_fp, \
              open(target, "r+b") as tgt_fp:
@@ -283,13 +304,12 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
             tgt_it = iter(tgt_mm.readline, b"")
 
             for src_line in src_it:
-                line_s = src_line.decode("utf-8")
-                line_t = next(tgt_it).decode("utf-8")
+                if stop_at is not None and count >= stop_at:
+                    break
 
-                count += 1
-                line_s = line_s.strip()
-                line_t = line_t.strip()
-                
+                line_s = src_line.decode("utf-8").strip()
+                line_t = next(tgt_it).decode("utf-8").strip()
+
                 # Skip empty
                 if len(line_s) == 0 or len(line_t) == 0:
                     continue
@@ -303,7 +323,9 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 
                 if skip:
                     continue
-                
+
+                count += 1
+
                 for t in transforms:
                     line_s, line_t = t(line_s, line_t)
                 
@@ -315,10 +337,11 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                         augmented += 1
             src_mm.close()
             tgt_mm.close()
+
         print(filtered)
-        print(f"Filtered {sum(filtered.values())} lines out of {count}")
-        print(f"Augmented {augmented}")
+        print(f"Filtered {sum(filtered.values())} lines")
         total_count += count + augmented
+        print(f"Added: {count + augmented} lines")
         print(f"New sentence count: {total_count}")
 
     finished = False
