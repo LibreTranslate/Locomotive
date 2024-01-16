@@ -179,12 +179,14 @@ Filters, transforms and augmenters can be specified globally (applied to all sou
 
 It's possible to specify weights for each source, for example, it's possible to instruct the training to use less samples for certain datasets:
 
+```json
 {
     "sources": [
         {"source": "file://D:\\path\\to\\mydataset-en_es", "weight": 1},
         {"source": "http://data.argosopentech.com/data-ccaligned-en_es.argosdata", "weight": 5},
     ]
 }
+```
 
 In the example above, 1 sample will be taken from mydataset and 5 will will be taken from CCAligned.
 
