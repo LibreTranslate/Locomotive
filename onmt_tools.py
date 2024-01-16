@@ -48,13 +48,17 @@ def sp_vocab_to_onmt_vocab(sp_vocab, onmt_vocab):
         with open(onmt_vocab, 'wb') as fout:
             OMIT = (DefaultTokens.UNK, DefaultTokens.BOS, DefaultTokens.EOS)
             for line in fin:
-                token_and_freq = line.rstrip("\n").split(None, 1)
-                if len(token_and_freq) != 2:
-                    continue
-                w, c = token_and_freq
-                if w in OMIT:
-                    continue
-                c = math.exp(float(c)) * 1000000
-                c = int(c) + 1
-                fout.write(f'{w}\t{c}\n'.encode("utf-8"))
+                try:
+                    token_and_freq = line.rstrip("\n").split(None, 1)
+                    if len(token_and_freq) != 2:
+                        continue
+                    w, c = token_and_freq
+                    if w in OMIT:
+                        continue
+                    c = math.exp(float(c)) * 1000000
+                    c = int(c) + 1
+                    fout.write(f'{w}\t{c}\n'.encode("utf-8"))
+                except Exception as e:
+                    print(str(e))
+
     print(f"Wrote {onmt_vocab}")
