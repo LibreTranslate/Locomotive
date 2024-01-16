@@ -3,6 +3,7 @@ import io
 import json
 import os
 import hashlib
+import mmap
 
 parser = argparse.ArgumentParser(description='Find text in data sources')
 parser.add_argument('--config',
@@ -28,6 +29,9 @@ sources = {}
 text = args.text.lower()
 
 for s in config['sources']:
+    if isinstance(s, dict):
+        s = s["source"]
+
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
     source_dir = os.path.join(cache_dir, md5)
     if os.path.isdir(source_dir):
@@ -45,12 +49,17 @@ for s in config['sources']:
 
         if source is not None and target is not None:
             def scan(file):
-                with open(file, 'r', encoding='utf-8') as f:
+                with open(file, 'r+b') as f:
+                    mm = mmap.mmap(f.fileno(), 0)
+                    it = iter(mm.readline, b"")
+
                     i = 1
-                    for line in f:
-                        if text in line.lower():
-                            print(f"{os.path.basename(s)} ({file}):{i} => {line}")
+                    for line in it:
+                        line_s = line.decode("utf-8")
+                        if text in line_s.lower():
+                            print(f"{os.path.basename(s)} ({file}):{i} => {line_s}")
                         i += 1
+                    mm.close()
             scan(source)
             scan(target)                
         else:

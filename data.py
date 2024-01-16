@@ -305,7 +305,8 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     for a_src, a_tgt in a(line_s, line_t):
                         lines.append((a_src + '\n', a_tgt + '\n'))
                         augmented += 1
-
+            src_mm.close()
+            tgt_mm.close()
         print(filtered)
         print(f"Filtered {sum(filtered.values())} lines out of {count}")
         print(f"Augmented {augmented}")
@@ -376,6 +377,3 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     os.unlink(os.path.join(out_dir, "tgt.txt"))
 
     return True
-    
-
-        

@@ -18,3 +18,12 @@ def single_word_punctuation(src, tgt, chars = "?!."):
 
     return out
 
+def lowercase(src, tgt):
+    """
+    The same sentences, all lowercased
+    """
+    low = (src.lower(), tgt.lower())
+    if low[0] != src and low[1] != tgt:
+        return [(src.lower(), tgt.lower())]
+    else:
+        return []
