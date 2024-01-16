@@ -280,6 +280,7 @@ onmt_config = {
     'train_steps': 100000, 
     'early_stopping': 4, 
     'bucket_size': 262144, 
+    'num_worker': 2,
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
