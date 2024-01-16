@@ -175,6 +175,21 @@ Locomotive provides various [filters](https://github.com/LibreTranslate/Locomoti
 
 Filters, transforms and augmenters can be specified globally (applied to all sources) as well as per-source (applied only to the specified source).
 
+## Using Weights
+
+It's possible to specify weights for each source, for example, it's possible to instruct the training to use less samples for certain datasets:
+
+{
+    "sources": [
+        {"source": "file://D:\\path\\to\\mydataset-en_es", "weight": 1},
+        {"source": "http://data.argosopentech.com/data-ccaligned-en_es.argosdata", "weight": 5},
+    ]
+}
+
+In the example above, 1 sample will be taken from mydataset and 5 will will be taken from CCAligned.
+
+Specifying weights disables filtering, transformations and augmentations. The datasets are used as-is. No merging or shuffling is performed either. A weight of 1 can be used to instruct Locomotive to not preprocess a source.
+
 ## Evaluate
 
 You can evaluate the model by running:

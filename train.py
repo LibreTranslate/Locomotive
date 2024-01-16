@@ -15,7 +15,7 @@ import zipfile
 import ctranslate2
 from opus import get_opus_dataset_url
 from net import download
-from data import sources_changed, merge_shuffle
+from data import sources_changed, merge_shuffle, extract_flores_val
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
@@ -86,6 +86,7 @@ sources = {}
 for s in config['sources']:
     filters = []
     transforms = []
+    weight = None
 
     if isinstance(s, dict):
         if not "source" in s:
@@ -93,6 +94,7 @@ for s in config['sources']:
         filters = s.get('filters', [])
         transforms = s.get('transforms', [])
         augmenters = s.get('augmenters', [])
+        weight = s.get("weight")
         s = s["source"]
 
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
@@ -124,6 +126,7 @@ for s in config['sources']:
                 'filters': filters,
                 'transforms': transforms,
                 'augmenters': augmenters,
+                'weight': weight,
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -205,13 +208,24 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             print(f'Cannot download stanza model: {str(e)}')
             exit(1)
 
+all_weighted = sum([1 for k in sources if sources[k]['weight'] is not None]) == len(sources)
+if all_weighted:
+    extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
 changed = merge_shuffle(sources, run_dir)
+has_merged = os.path.isfile(os.path.join(rel_run_dir, 'src-train.txt'))
 
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
-            spm.SentencePieceTrainer.train(input=[os.path.join(run_dir, "src-train.txt"), os.path.join(run_dir, "tgt-train.txt")], 
+            datasets = []
+            if has_merged:
+                datasets += [os.path.join(run_dir, "src-train.txt"), os.path.join(run_dir, "tgt-train.txt")]
+            for k in sources:
+                if sources[k]['weight'] is not None:
+                    datasets += [sources[k]['source'], sources[k]['target']]
+
+            spm.SentencePieceTrainer.train(input=datasets, 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
                                             character_coverage=config.get('character_coverage', 0.9995),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
@@ -234,6 +248,30 @@ if not os.path.isfile(sp_model_path) or changed:
 os.makedirs(onmt_dir, exist_ok=True)
 
 transforms = ['sentencepiece', 'filtertoolong']
+corpora = {
+    'valid': {
+        'path_src': f'{rel_run_dir}/src-val.txt',
+        'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
+        'transforms': transforms
+    }
+}
+if has_merged:
+    corpora['corpus_1'] = {
+        'path_src': f'{rel_run_dir}/src-train.txt',
+        'path_tgt': f'{rel_run_dir}/tgt-train.txt',
+        'transforms': transforms,
+        'weight': 1
+    }
+
+for k in sources:
+    if sources[k]['weight'] is not None:
+        corpora[k] = {
+            'path_src': sources[k]['source'],
+            'path_tgt': sources[k]['target'],
+            'weight': sources[k]['weight'],
+            'transforms': transforms,            
+        }
+
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
@@ -241,19 +279,7 @@ onmt_config = {
     'src_vocab_size': config.get('vocab_size', 50000),
     'tgt_vocab_size': config.get('vocab_size', 50000),
     'share_vocab': True, 
-    'data': {
-        'corpus_1': {
-            'path_src': f'{rel_run_dir}/src-train.txt',
-            'path_tgt': f'{rel_run_dir}/tgt-train.txt',
-            'transforms': transforms,
-            'weight': 1
-        },
-        'valid': {
-            'path_src': f'{rel_run_dir}/src-val.txt',
-            'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-            'transforms': transforms
-        }
-    }, 
+    'data': corpora, 
     'src_subword_type': 'sentencepiece',
     'tgt_subword_type': 'sentencepiece',
     'src_onmttok_kwargs': {
