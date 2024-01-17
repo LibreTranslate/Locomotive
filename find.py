@@ -6,13 +6,16 @@ import hashlib
 import mmap
 
 parser = argparse.ArgumentParser(description='Find text in data sources')
-parser.add_argument('--config',
+parser.add_argument('-c', '--config',
     type=str,
     default="model-config.json",
     help='Path to model-config.json. Default: %(default)s')
-parser.add_argument('--text',
+parser.add_argument('-t', '--text',
     type=str,
     help='Text to search. Default: %(default)s')
+parser.add_argument('-e', '--exact',
+    action="store_true",
+    help='Exact match')
 
 args = parser.parse_args() 
 try:
@@ -32,8 +35,12 @@ for s in config['sources']:
     if isinstance(s, dict):
         s = s["source"]
 
-    md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
-    source_dir = os.path.join(cache_dir, md5)
+    if s.startswith("file://"):
+        source_dir = s[7:]
+    else:
+        md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
+        source_dir = os.path.join(cache_dir, md5)
+
     if os.path.isdir(source_dir):
         source, target = None, None
         for f in [f.path for f in os.scandir(source_dir) if f.is_file()]:
@@ -56,12 +63,17 @@ for s in config['sources']:
                     i = 1
                     for line in it:
                         line_s = line.decode("utf-8")
-                        if text in line_s.lower():
-                            print(f"{os.path.basename(s)} ({file}):{i} => {line_s}")
+                        if args.exact:
+                            if text == line_s.lower().strip():
+                                print(f"{os.path.basename(s)} ({file}):{i} => {line_s}")
+                        else:
+                            if text in line_s.lower():
+                                print(f"{os.path.basename(s)} ({file}):{i} => {line_s}")
                         i += 1
                     mm.close()
             scan(source)
             scan(target)                
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Skipping...")
-
+    else:
+        print(f"Cannot access {source_dir}")
