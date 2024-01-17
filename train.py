@@ -227,7 +227,7 @@ if not os.path.isfile(sp_model_path) or changed:
 
             spm.SentencePieceTrainer.train(input=datasets, 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
-                                            character_coverage=config.get('character_coverage', 0.9995),
+                                            character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True)
             break
