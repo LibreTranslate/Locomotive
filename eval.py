@@ -25,6 +25,14 @@ parser.add_argument('--flores-id',
 parser.add_argument('--tokens',
     action="store_true",
     help='Display tokens rather than words. Default: %(default)s')
+parser.add_argument('--cpu',
+    action="store_true",
+    help='Force CPU use. Default: %(default)s')
+parser.add_argument('--max-batch-size',
+    type=int,
+    default=16,
+    help='Max batch size for translation. Default: %(default)s')
+
 
 
 args = parser.parse_args()
@@ -52,8 +60,8 @@ if not os.path.isdir(ct2_model_dir) or (not os.path.isfile(sp_model) and not os.
 
 
 def translator():
-    device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
-    model = ctranslate2.Translator(ct2_model_dir, device="cpu", compute_type="default")
+    device = "cuda" if ctranslate2.get_cuda_device_count() > 0 and not args.cpu else "cpu"
+    model = ctranslate2.Translator(ct2_model_dir, device=device, compute_type="default")
     if os.path.isfile(sp_model):
         tokenizer = SentencePieceTokenizer(sp_model)
     elif os.path.isfile(bpe_model):
@@ -85,7 +93,8 @@ if args.bleu or args.flores_id is not None:
     translation_obj = data["model"].translate_batch(
         [encode(t, data["tokenizer"]) for t in src_text],
         beam_size=4, # same as argos
-        return_scores=False, # speed up
+        return_scores=False, # speed up,
+        max_batch_size=args.max_batch_size,
     )
 
     translated_text = [
@@ -94,7 +103,7 @@ if args.bleu or args.flores_id is not None:
     ]
     
     bleu_score = round(corpus_bleu(
-        translated_text, [[x] for x in tgt_text], tokenize="flores200"
+        translated_text, [[x] for x in tgt_text]
     ).score, 5)
 
     if args.flores_id is not None:
