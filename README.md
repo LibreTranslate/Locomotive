@@ -67,7 +67,7 @@ Create a `config.json` file specifying your sources:
     "sources": [
         "file://D:\\path\\to\\mydataset-en_es",
         "opus://Ubuntu",
-        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata",
+        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata"
     ]   
 }
 ```
@@ -101,7 +101,7 @@ If you're running out of CUDA memory, decrease the `batch_size` parameter, which
     "version": "1.0",
     "sources": [
         "file://D:\\path\\to\\mydataset-en_es",
-        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata",
+        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata"
     ],
     "batch_size": 2048
 }
@@ -140,7 +140,7 @@ The model is generated using sensible default values. You can override the [defa
     "version": "1.0",
     "sources": [
         "file://D:\\path\\to\\mydataset-en_es",
-        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata",
+        "http://data.argosopentech.com/data-ccaligned-en_es.argosdata"
     ],
     "vocab_size": 30000
 }
@@ -183,7 +183,7 @@ It's possible to specify weights for each source, for example, it's possible to 
 {
     "sources": [
         {"source": "file://D:\\path\\to\\mydataset-en_es", "weight": 1},
-        {"source": "http://data.argosopentech.com/data-ccaligned-en_es.argosdata", "weight": 5},
+        {"source": "http://data.argosopentech.com/data-ccaligned-en_es.argosdata", "weight": 5}
     ]
 }
 ```

@@ -86,6 +86,7 @@ sources = {}
 for s in config['sources']:
     filters = []
     transforms = []
+    augmenters = []
     weight = None
 
     if isinstance(s, dict):
