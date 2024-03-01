@@ -300,9 +300,9 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
             if f.__name__ == "excerpt":
                 line_count = count_lines(source)
                 print(f"Line count: {line_count}")
-                begin_at = int((f.__args__.get("top", 100) / 100) * line_count)
+                begin_at = int((f.__args__.get("top_percentile", 100) / 100) * line_count)
                 print(f"Begins collecting at: {begin_at}")
-                stop_at = int((f.__args__.get("bottom", 100) / 100) * line_count)
+                stop_at = int((f.__args__.get("bottom_percentile", 100) / 100) * line_count)
                 print(f"Ends collecting at: {stop_at}")
 
         with open(source, "r+b") as src_fp, \
