@@ -1,9 +1,9 @@
-def excerpt(src, tgt, top, bottom):
+def excerpt(src, tgt, top_percentile, bottom_percentile):
     """
     Only add the lines between top X% and botom Y% from the dataset
 
-    :param float top: Percentage of dataset to begin collection
-    :param float bottom: Percentage of dataset to end collection
+    :param float top_percentile: Percentile of dataset where collection begins
+    :param float bottom_percentile: Percentile of dataset where collection stops
     """
     return False # placeholder
 
