@@ -29,9 +29,9 @@ is greather than max.
 <code>Remove lines when source is the same as target</code>
 
 #### excerpt
-<code>Selects the part of a corpus located between top % and bottom % of the whole data (useful with very large corpora only).</code>
-* top (float) : percentage of the corpus where data collection begins
-* bottom (float) : percentage at which data collection ends
+<code>Selects a partial dataset located between top % and bottom % of a large dataset (useful with very large ones).</code>
+* top_percentile (float) : dataset percentile where data collection begins
+* bottom_percentile (float) : percentile where data collection ends
   
 #### first_char_mismatch
 <code>Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.</code>
