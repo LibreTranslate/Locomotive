@@ -316,7 +316,8 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 # Skip top % if excerpt filter on
                 if begin_at is not None and count <= begin_at
                     continue
-                
+
+                #Exits if excerpt or top filter on
                 if stop_at is not None and count >= stop_at:
                     break
 
