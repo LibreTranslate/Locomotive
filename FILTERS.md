@@ -9,7 +9,7 @@
 #### characters_count_mismatch
 <code>Removes lines when the sum of certain characters between source and target is not the same.
 </code>
- * chars (str) : Characters to check (()[]?!:."“”{})
+ * chars (str) : Characters to check (()[]?!:."â€œâ€{})
 
 #### contains
 <code>Removes lines that contain these words
@@ -28,6 +28,11 @@ is greather than max.
 #### duplicates
 <code>Remove lines when source is the same as target</code>
 
+#### excerpt
+<code>Selects a partial dataset located between top % and bottom % of a large dataset (useful with very large ones).</code>
+* top_percentile (float) : dataset percentile where data collection begins
+* bottom_percentile (float) : percentile where data collection ends
+  
 #### first_char_mismatch
 <code>Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.</code>
 

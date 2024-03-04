@@ -286,6 +286,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         filtered = {}
         count = 0
         augmented = 0
+        begin_at = None
         stop_at = None
         line_count = None
 
@@ -296,6 +297,14 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 stop_at = int((f.__args__.get("percent", 100) / 100) * line_count)
                 print(f"Stop at: {stop_at}")
 
+            if f.__name__ == "excerpt":
+                line_count = count_lines(source)
+                print(f"Line count: {line_count}")
+                begin_at = int((f.__args__.get("top_percentile", 100) / 100) * line_count)
+                print(f"Begins collecting at: {begin_at}")
+                stop_at = int((f.__args__.get("bottom_percentile", 100) / 100) * line_count)
+                print(f"Ends collecting at: {stop_at}")
+
         with open(source, "r+b") as src_fp, \
              open(target, "r+b") as tgt_fp:
             src_mm = mmap.mmap(src_fp.fileno(), 0)
@@ -304,6 +313,11 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
             tgt_it = iter(tgt_mm.readline, b"")
 
             for src_line in src_it:
+                # Skip top % if excerpt filter on
+                if begin_at is not None and count <= begin_at:
+                    continue
+
+                #Exit point if excerpt or top filter on
                 if stop_at is not None and count >= stop_at:
                     break
 
