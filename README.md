@@ -86,7 +86,7 @@ The output will be saved in `run/[model]/translate-[from]_[to]-[version].argosmo
 
 ### Running out of memory
 
-If you're running out of CUDA memory, decrease the `batch_size` parameter, which by default is set to `4096`:
+If you're running out of CUDA memory, decrease the `batch_size` parameter, which by default is set to `8192`:
 
 ```json
 {
