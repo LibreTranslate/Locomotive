@@ -125,7 +125,7 @@ python train.py --config config.json --tensorboard
 
 ### Tuning
 
-The model is generated using sensible default values. You can override the [default configuration](https://github.com/LibreTranslate/Locomotive/blob/main/train.py#L199) by adding values directly to your `config.json`. For example, to use a smaller dictionary size, add a `vocab_size` key in `config.json`:
+The model is generated using sensible default values. You can override the [default configuration](https://github.com/LibreTranslate/Locomotive/blob/main/train.py#L276) by adding values directly to your `config.json`. For example, to use a smaller dictionary size, add a `vocab_size` key in `config.json`:
 
 ```json
 {
