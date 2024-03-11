@@ -286,6 +286,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         filtered = {}
         count = 0
         augmented = 0
+        line_no = 0
         begin_at = None
         stop_at = None
         line_count = None
@@ -313,12 +314,15 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
             tgt_it = iter(tgt_mm.readline, b"")
 
             for src_line in src_it:
-                # Skip top % if excerpt filter on
-                if begin_at is not None and count <= begin_at:
+                #Start counting every line ('count' excludes filtered lines)
+                line_no += 1
+                
+                # Skip lines until begin_at if excerpt filter on
+                if begin_at is not None and line_no < begin_at:
                     continue
 
-                #Exit point if excerpt or top filter on
-                if stop_at is not None and count >= stop_at:
+                #Exit after "stop_at" line if excerpt or top filter on
+                if stop_at is not None and line_no > stop_at:
                     break
 
                 line_s = src_line.decode("utf-8").strip()
