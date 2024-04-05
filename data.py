@@ -302,9 +302,9 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 line_count = count_lines(source)
                 print(f"Line count: {line_count}")
                 begin_at = int((f.__args__.get("top_percentile", 100) / 100) * line_count)
-                print(f"Begins collecting at: {begin_at}")
+                print(f"Excerpt will begin at line: {begin_at}")
                 stop_at = int((f.__args__.get("bottom_percentile", 100) / 100) * line_count)
-                print(f"Ends collecting at: {stop_at}")
+                print(f"Excerpt will end at line: {stop_at}")
 
         with open(source, "r+b") as src_fp, \
              open(target, "r+b") as tgt_fp:
@@ -314,20 +314,21 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
             tgt_it = iter(tgt_mm.readline, b"")
 
             for src_line in src_it:
+                #Exit after "stop_at" line if excerpt or top filter on
+                if stop_at is not None and line_no > stop_at:
+                    print(f"Finished collecting before line {line_no}")
+                    break
+
+                line_s = src_line.decode("utf-8").strip()
+                line_t = next(tgt_it).decode("utf-8").strip()
+                
                 #Start counting every line ('count' excludes filtered lines)
                 line_no += 1
                 
                 # Skip lines until begin_at if excerpt filter on
                 if begin_at is not None and line_no < begin_at:
                     continue
-
-                #Exit after "stop_at" line if excerpt or top filter on
-                if stop_at is not None and line_no > stop_at:
-                    break
-
-                line_s = src_line.decode("utf-8").strip()
-                line_t = next(tgt_it).decode("utf-8").strip()
-
+                
                 # Skip empty
                 if len(line_s) == 0 or len(line_t) == 0:
                     continue
