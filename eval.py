@@ -101,8 +101,6 @@ data = translator()
 if args.bleu or args.flores_id or args.translate_flores is not None:
     if args.flores_dataset:
         dataset = args.flores_dataset
-    else: 
-        dataset = "dev"
     src_text = get_flores(config["from"]["code"], dataset)
     tgt_text = get_flores(config["to"]["code"], dataset)
     
@@ -133,6 +131,7 @@ if args.bleu or args.flores_id or args.translate_flores is not None:
         print(f"({config['from']['code']})> {src_text[0]}\n(gt)> {tgt_text[0]}\n({config['to']['code']})> {' '.join(translated_text)}")
     else:
         print(f"BLEU score: {bleu_score}")
+
 else:
     # Interactive mode
     print("Starting interactive mode")
