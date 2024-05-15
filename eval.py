@@ -25,6 +25,13 @@ parser.add_argument('--flores-id',
 parser.add_argument('--tokens',
     action="store_true",
     help='Display tokens rather than words. Default: %(default)s')
+parser.add_argument('--flores_dataset',
+    type=str,
+    default="dev",
+    help='Defines the flores200 dataset to translate. Default: %(default)s')
+parser.add_argument('--translate_flores',
+    action="store_true",
+    help='Translate the flores200 corpus into a text file with .evl extension. Default: %(default)s')
 parser.add_argument('--cpu',
     action="store_true",
     help='Force CPU use. Default: %(default)s')
@@ -80,11 +87,22 @@ def decode(tokens, tokenizer):
             detokenized = detokenized[1:]
         return detokenized
 
+def translate_flores():
+    tra_filename = f"flores200{dataset}-{model_dirname}.evl"
+    tra_f = os.path.join(run_dir, tra_filename)
+    with open(tra_f, "w", encoding="utf8") as translation_file:
+        for t in translated_text:
+            translation_file.write(t)
+            translation_file.write("\n")
+    return tra_f
+
 data = translator()
 
-if args.bleu or args.flores_id is not None:
-    src_text = get_flores(config["from"]["code"], "dev")
-    tgt_text = get_flores(config["to"]["code"], "dev")
+if args.bleu or args.flores_id or args.translate_flores is not None:
+    if args.flores_dataset:
+        dataset = args.flores_dataset
+    src_text = get_flores(config["from"]["code"], dataset)
+    tgt_text = get_flores(config["to"]["code"], dataset)
     
     if args.flores_id is not None:
         src_text = [src_text[args.flores_id]]
@@ -106,10 +124,14 @@ if args.bleu or args.flores_id is not None:
         translated_text, [[x] for x in tgt_text]
     ).score, 5)
 
+    if args.translate_flores:
+        translate_flores()
+
     if args.flores_id is not None:
         print(f"({config['from']['code']})> {src_text[0]}\n(gt)> {tgt_text[0]}\n({config['to']['code']})> {' '.join(translated_text)}")
     else:
         print(f"BLEU score: {bleu_score}")
+
 else:
     # Interactive mode
     print("Starting interactive mode")
