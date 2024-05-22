@@ -3,8 +3,9 @@ import json
 import argparse
 import ctranslate2
 import sentencepiece
+import subprocess
 from sacrebleu import corpus_bleu
-from data import get_flores
+from data import get_flores, get_flores_file_path
 from tokenizer import BPETokenizer, SentencePieceTokenizer
 
 parser = argparse.ArgumentParser(description='Evaluate LibreTranslate compatible models')
@@ -32,6 +33,9 @@ parser.add_argument('--flores_dataset',
 parser.add_argument('--translate_flores',
     action="store_true",
     help='Translate the flores200 corpus into a text file with .evl extension. Default: %(default)s')
+parser.add_argument('--comet',
+    action="store_true",
+    help='Run COMET score command on the translated flores text. Default: %(default)s')
 parser.add_argument('--cpu',
     action="store_true",
     help='Force CPU use. Default: %(default)s')
@@ -63,7 +67,6 @@ bpe_model = os.path.join(run_dir, "bpe.model")
 if not os.path.isdir(ct2_model_dir) or (not os.path.isfile(sp_model) and not os.path.isfile(bpe_model)):
     print(f"The model in {run_dir} is not valid. Did you run train.py first?")
     exit(1)
-
 
 
 def translator():
@@ -98,7 +101,7 @@ def translate_flores():
 
 data = translator()
 
-if args.bleu or args.flores_id or args.translate_flores is not None:
+if args.bleu or args.flores_id or args.translate_flores or args.comet is not None:
     if args.flores_dataset:
         dataset = args.flores_dataset
     src_text = get_flores(config["from"]["code"], dataset)
@@ -126,6 +129,22 @@ if args.bleu or args.flores_id or args.translate_flores is not None:
 
     if args.translate_flores:
         translate_flores()
+
+    if args.comet:
+        src_f = get_flores_file_path(config["from"]["code"], dataset)
+        ref_f = get_flores_file_path(config["to"]["code"], dataset)
+        tra_f = translate_flores()
+        
+        subprocess.run([
+            "comet-score",
+            "--sources",
+            src_f,
+            "--translations",
+            tra_f,
+            "--references",
+            ref_f,
+            "--quiet",
+            "--only_system"]) 
 
     if args.flores_id is not None:
         print(f"({config['from']['code']})> {src_text[0]}\n(gt)> {tgt_text[0]}\n({config['to']['code']})> {' '.join(translated_text)}")

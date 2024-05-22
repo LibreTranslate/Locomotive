@@ -197,6 +197,11 @@ def get_flores_dataset_path(dataset="dev"):
 
     return flores_dataset
 
+def get_flores_file_path(lang_code, dataset="dev"):
+    flores_dataset = get_flores_dataset_path(dataset)
+    flores_file_path = os.path.join(flores_dataset, nllb_langs[lang_code] + f".{dataset}")
+    return flores_file_path
+
 def get_flores(lang_code, dataset="dev"):
     flores_dataset = get_flores_dataset_path(dataset)
     source = os.path.join(flores_dataset, nllb_langs[lang_code] + f".{dataset}")
