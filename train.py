@@ -234,7 +234,7 @@ if not os.path.isfile(sp_model_path) or changed:
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True,
-                                            byte_fallback=args.byte_fallback_off)
+                                            byte_fallback=args.byte-fallback-off)
             break
         except Exception as e:
             err = str(e)
