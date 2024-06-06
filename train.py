@@ -42,6 +42,9 @@ parser.add_argument('--toy',
 parser.add_argument('--inflight',
     action='store_true',
     help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
+parser.add_argument('--byte-fallbakc-off',
+    action='store-false',
+    help='Disable byte fallback during SentencePiece training. Default is enabled (True) : will render OOV tokens as is.')
 
 args = parser.parse_args() 
 try:
@@ -230,7 +233,8 @@ if not os.path.isfile(sp_model_path) or changed:
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
-                                            shuffle_input_sentence=True)
+                                            shuffle_input_sentence=True,
+                                            byte_fallback=args.byte_fallback_off)
             break
         except Exception as e:
             err = str(e)
@@ -331,7 +335,8 @@ onmt_config = {
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
     'position_encoding': True,
-    # 'max_relative_positions': 20,
+    'max_relative_positions': 0,
+    'pos_ffn_activation_fn': 'relu',
     'enc_layers': 6, 
     'dec_layers': 6,
     'heads': 8,
