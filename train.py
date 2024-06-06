@@ -42,7 +42,7 @@ parser.add_argument('--toy',
 parser.add_argument('--inflight',
     action='store_true',
     help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
-parser.add_argument('--byte-fallbakc-off',
+parser.add_argument('--byte-fallback-off',
     action='store-false',
     help='Disable byte fallback during SentencePiece training. Default is enabled (True) : will render OOV tokens as is.')
 
