@@ -1,7 +1,7 @@
 --find-links https://download.pytorch.org/whl/cu117/torch_stable.html
 torch>=2.0.1+cu117 ; sys_platform == 'linux' or sys_platform == 'win32'
 torch==2.0.1 ; sys_platform == 'darwin'
-ctranslate2==4.21.0
+ctranslate2==3.20.0
 stanza==1.1.1
 sentencepiece==0.1.99
 requests==2.31.0
@@ -9,7 +9,7 @@ PyYAML==6.0.1
 sacrebleu==2.3.1
 unbabel-comet==2.2.2
 subword-nmt>=0.3.7
-OpenNMT-py==3.5.1
+OpenNMT-py==3.4.1
 tensorboard==2.14.0
 six==1.16.0
 iso639==0.1.4
