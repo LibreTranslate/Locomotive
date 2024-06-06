@@ -42,7 +42,7 @@ parser.add_argument('--toy',
 parser.add_argument('--inflight',
     action='store_true',
     help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
-parser.add_argument('--byte-fallbakc-off',
+parser.add_argument('--byte-fallback-off',
     action='store-false',
     help='Disable byte fallback during SentencePiece training. Default is enabled (True) : will render OOV tokens as is.')
 
@@ -234,7 +234,7 @@ if not os.path.isfile(sp_model_path) or changed:
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True,
-                                            byte_fallback=args.byte_fallback_off)
+                                            byte_fallback=args.byte-fallback-off)
             break
         except Exception as e:
             err = str(e)
