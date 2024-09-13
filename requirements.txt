@@ -7,7 +7,6 @@ sentencepiece==0.1.99
 requests==2.31.0
 PyYAML==6.0.1
 sacrebleu==2.3.1
-unbabel-comet==2.2.2
 subword-nmt>=0.3.7
 OpenNMT-py==3.4.1
 tensorboard==2.14.0
@@ -16,3 +15,4 @@ iso639==0.1.4
 sacremoses==0.0.53
 removedup==1.0.6
 fastshuffle==1.0.1
+unbabel-comet==2.2.2
