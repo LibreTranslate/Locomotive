@@ -262,6 +262,13 @@ cometkiwi_scores = os.path.join(corpus_dir, scores_file)
 
 
 def compute_scores() -> None:
+# A few failsafes not to crash scores or in case the data is corrupt
+    if os.path.isfile(cometkiwi_scores) and count_lines(cometkiwi_scores) == count_lines(source) == count_lines(target):
+        print("Cometkiwi scores have already been computed, exiting the compute function.")
+        exit(1)
+    if not count_lines(source) == count_lines(target):
+        print("Source and target unaligned, one or both files are corrupt.")
+        exit(1)
     if not args.verbose:
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
         for logger in loggers:
