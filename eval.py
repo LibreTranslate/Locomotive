@@ -41,7 +41,7 @@ parser.add_argument('--cpu',
     help='Force CPU use. Default: %(default)s')
 parser.add_argument('--max-batch-size',
     type=int,
-    default=16,
+    default=32,
     help='Max batch size for translation. Default: %(default)s')
 
 
@@ -85,10 +85,7 @@ def decode(tokens, tokenizer):
     if args.tokens:
         return " ".join(tokens)
     else:
-        detokenized = tokenizer.decode(tokens)
-        if len(detokenized) > 0 and detokenized[0] == " ":
-            detokenized = detokenized[1:]
-        return detokenized
+        return tokenizer.lazy_processor().decode_pieces(tokens)
 
 def translate_flores():
     tra_filename = f"flores200{dataset}-{model_dirname}.evl"

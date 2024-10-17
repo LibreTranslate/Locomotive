@@ -1,4 +1,5 @@
 import argparse
+import io
 import sys
 import json
 import os
@@ -15,7 +16,7 @@ import zipfile
 import ctranslate2
 from opus import get_opus_dataset_url
 from net import download
-from data import sources_changed, merge_shuffle, extract_flores_val
+from data import sources_changed, get_flores, extract_flores_val
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
@@ -45,7 +46,6 @@ parser.add_argument('--inflight',
 parser.add_argument('--byte_fallback_off',
     action='store_false',
     help='Disable byte fallback during SentencePiece training. Default is enabled (True).')
-
 
 args = parser.parse_args() 
 try:
@@ -88,18 +88,15 @@ os.makedirs(run_dir, exist_ok=True)
 sources = {}
 
 for s in config['sources']:
-    filters = []
-    transforms = []
-    augmenters = []
-    weight = None
-
+    weight = 1
+    src_prefix = ""
+    tgt_prefix = ""
     if isinstance(s, dict):
         if not "source" in s:
             print("Malformed source: {s}. A 'source' key is required.")
-        filters = s.get('filters', [])
-        transforms = s.get('transforms', [])
-        augmenters = s.get('augmenters', [])
-        weight = s.get("weight")
+        weight = s.get("weight", 1)
+        src_prefix = s.get("src_prefix", "")
+        tgt_prefix = s.get("tgt_prefix", "")
         s = s["source"]
 
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
@@ -128,10 +125,9 @@ for s in config['sources']:
                 'source': source,
                 'target': target,
                 'hash': md5,
-                'filters': filters,
-                'transforms': transforms,
-                'augmenters': augmenters,
                 'weight': weight,
+                'src_prefix': src_prefix,
+                'tgt_prefix': tgt_prefix
             }
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
@@ -189,18 +185,13 @@ for s in config['sources']:
         
         add_source_from(dataset_path)
 
+min_weight = float('inf')
 for k in sources:
-    if config.get('filters'):
-        for f in reversed(config['filters']):
-            sources[k]['filters'].insert(0, f)
-    if config.get('transforms'):
-        for t in reversed(config['transforms']):
-            sources[k]['transforms'].insert(0, t)
-    if config.get('augmenters'):
-        for a in reversed(config['augmenters']):
-            sources[k]['augmenters'].insert(0, a)
+    min_weight = min(sources[k]['weight'], min_weight)
 
-    print(f" - {k} (hash:{sources[k]['hash'][:7]})")
+for k in sources:
+    sources[k]['weight'] = int(round(sources[k]['weight'] / min_weight, 0))
+    print(f" - {k} (hash:{sources[k]['hash'][:7]} | weight:{sources[k]['weight']})")
 
 stanza_lang_code = config['from']['code']
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
@@ -213,29 +204,34 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
             print(f'Cannot download stanza model: {str(e)}')
             exit(1)
 
-all_weighted = sum([1 for k in sources if sources[k]['weight'] is not None]) == len(sources)
-if all_weighted:
-    extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
-changed = merge_shuffle(sources, run_dir)
-has_merged = os.path.isfile(os.path.join(rel_run_dir, 'src-train.txt'))
+extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
+
+os.makedirs(onmt_dir, exist_ok=True)
+
+# Check for .pt files in the onmt_dir
+pt_files_present = any(file.endswith('.pt') for file in os.listdir(onmt_dir) if os.path.isfile(os.path.join(onmt_dir, file)))
+# Allows to change sources if there is already a checkpoint with a trained vocab
+changed = not pt_files_present and sources_changed(sources, run_dir)
+
+# Initialize control_symbols list
+control_symbols = []
+for s in sources:
+    # Add prefix and suffix to control_symbols
+    control_symbols.extend([sources[s].get('src_prefix', ''), sources[s].get('tgt_prefix', '')])
+# Remove duplicates from control_symbols and filter out empty strings
+control_symbols = list(filter(None, set(control_symbols)))
 
 sp_model_path = os.path.join(run_dir, "sentencepiece.model")
 if not os.path.isfile(sp_model_path) or changed:
     while True:
         try:
-            datasets = []
-            if has_merged:
-                datasets += [os.path.join(run_dir, "src-train.txt"), os.path.join(run_dir, "tgt-train.txt")]
-            for k in sources:
-                if sources[k]['weight'] is not None:
-                    datasets += [sources[k]['source'], sources[k]['target']]
-
-            spm.SentencePieceTrainer.train(input=datasets, 
+            spm.SentencePieceTrainer.train(input=[sources[s]["source"] for s in sources] + [sources[s]["target"] for s in sources], 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
                                             character_coverage=config.get('character_coverage', 1.0),
                                             input_sentence_size=config.get('input_sentence_size', 1000000),
                                             shuffle_input_sentence=True,
-                                            byte_fallback=args.byte_fallback_off)
+                                            byte_fallback=args.byte_fallback_off,
+                                            control_symbols=control_symbols)
             break
         except Exception as e:
             err = str(e)
@@ -251,35 +247,8 @@ if not os.path.isfile(sp_model_path) or changed:
                 print(err)
                 exit(1)
 
-os.makedirs(onmt_dir, exist_ok=True)
-# different transforms at train & valid because of toeknization bug in onmt3.5
-train_transforms = ['sentencepiece', 'filtertoolong']
+train_transforms = ['sentencepiece', 'filtertoolong', 'prefix']
 valid_transforms = ['sentencepiece']
-
-corpora = {
-    'valid': {
-        'path_src': f'{rel_run_dir}/src-val.txt',
-        'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-        'transforms': valid_transforms
-    }
-}
-if has_merged:
-    corpora['corpus_1'] = {
-        'path_src': f'{rel_run_dir}/src-train.txt',
-        'path_tgt': f'{rel_run_dir}/tgt-train.txt',
-        'transforms': train_transforms,
-        'weight': 1
-    }
-
-for k in sources:
-    if sources[k]['weight'] is not None:
-        corpora[k] = {
-            'path_src': sources[k]['source'],
-            'path_tgt': sources[k]['target'],
-            'weight': sources[k]['weight'],
-            'transforms': train_transforms,            
-        }
-
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
@@ -287,7 +256,13 @@ onmt_config = {
     'src_vocab_size': config.get('vocab_size', 50000),
     'tgt_vocab_size': config.get('vocab_size', 50000),
     'share_vocab': True, 
-    'data': corpora, 
+    'data': {
+        'valid': {
+            'path_src': f'{rel_run_dir}/src-val.txt',
+            'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
+            'transforms': valid_transforms
+        }
+    }, 
     'src_subword_type': 'sentencepiece',
     'tgt_subword_type': 'sentencepiece',
     'src_onmttok_kwargs': {
@@ -304,31 +279,29 @@ onmt_config = {
     'src_subword_alpha': 0.0, 
     'tgt_subword_nbest': 1, 
     'tgt_subword_alpha': 0.0, 
-    'src_seq_length': 150, #onmt_train default is 192...
+    'src_seq_length': 150, 
     'tgt_seq_length': 150, 
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
-    'save_checkpoint_steps': 2500, 
-    'keep_checkpoint': 10,
+    'save_checkpoint_steps': 1000, 
     'valid_steps': 2500, 
-    'train_steps': 100000, 
+    'train_steps': 50000, 
     'early_stopping': 4, 
     'bucket_size': 262144, 
-    'num_worker': 2,
     'world_size': 1, 
     'gpu_ranks': [0], 
     'batch_type': 'tokens', 
     'queue_size': 10000,
-    'batch_size': 8192,
-    'valid_batch_size': 2048,
+    'batch_size': 4096,
+    'valid_batch_size': 128,
     'max_generator_batches': 2, 
     'accum_count': 8, 
     'accum_steps': 0, 
     'model_dtype': 'fp16', 
     'optim': 'adam', 
-    'learning_rate': 0.15,
+    'learning_rate': 1,
     'warmup_steps': 16000, 
-    'decay_method': 'rsqrt', 
+    'decay_method': 'noam', 
     'adam_beta2': 0.998, 
     'max_grad_norm': 0, 
     'label_smoothing': 0.1, 
@@ -337,9 +310,8 @@ onmt_config = {
     'normalization': 'tokens', 
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
-    'position_encoding': True,
-    'max_relative_positions': 0, #onmt default
-	'pos_ffn_activation_fn': 'relu',
+    'position_encoding': False,
+    'max_relative_positions': 20,
     'enc_layers': 6, 
     'dec_layers': 6,
     'heads': 8,
@@ -352,8 +324,24 @@ onmt_config = {
     'attention_dropout': 0.1,
     'share_decoder_embeddings': True,
     'share_embeddings': True,
+    'num_workers': 0,
     'valid_metrics': ['BLEU'],
+    'pos_ffn_activation_fn': 'gelu',
+    'reset_optim': 'none',
+    'update_vocab': False,
+    'keep_checkpoint': 15
 }
+
+# Populate data sources
+for s in sources:
+    onmt_config['data'][sources[s]['hash']] = {
+        'path_src': sources[s]['source'], 
+        'path_tgt': sources[s]['target'], 
+        'weight': sources[s]['weight'],
+        'transforms': train_transforms,
+        'src_prefix': sources[s]['src_prefix'],
+        'tgt_prefix': sources[s]['tgt_prefix']
+    }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
 if sys.platform == 'darwin' or no_gpu:
@@ -389,6 +377,7 @@ if not os.path.isfile(onmt_vocab_file):
     sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
+
 def get_checkpoints():
     chkpts = [cp for cp in glob.glob(os.path.join(onmt_dir, "*.pt")) if "averaged.pt" not in cp]
     return list(sorted(chkpts, key=lambda x: int(re.findall('\d+', x)[0])))
@@ -453,6 +442,7 @@ else:
         avg_num = min(config.get('avg_checkpoints', 1), len(checkpoints))
         print(f"Averaging {avg_num} models")
         average_models(checkpoints[-avg_num:], average_checkpoint)
+
 # Quantize
 ct2_model_dir = os.path.join(run_dir, "model")
 if os.path.isdir(ct2_model_dir):
@@ -468,7 +458,7 @@ subprocess.run([
         "--quantization",
         "int8"])
 
-# Create .argosmodel package
+# Package
 package_slug = f"translate-{config['from']['code']}_{config['to']['code']}-{config['version'].replace('.', '_')}"
 package_file = os.path.join(run_dir, f"{package_slug}.argosmodel")
 if os.path.isfile(package_file):
@@ -478,10 +468,11 @@ if os.path.isdir(package_folder):
     shutil.rmtree(package_folder)
 os.makedirs(package_folder, exist_ok=True)
 
-readme_file = os.path.join(package_folder, "README.md")
+readme_file = os.path.join(run_dir, "README.md")
 with open(readme_file, "w", encoding="utf-8") as f:
     f.write(readme)
-metadata_file = os.path.join(package_folder, "metadata.json")
+
+metadata_file = os.path.join(run_dir, "metadata.json")
 with open(metadata_file, "w", encoding="utf-8") as f:
     f.write(json.dumps(metadata))
 
