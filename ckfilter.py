@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2022 Unbabel
+# Copyright (C) 2020 Unbabel
 #
-# Licensed under the CC-BY-NC-SA4.0 licence;
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -137,13 +137,13 @@ def regroup_dataset(dir):
 # Check regrouped aligned files and return correct source and target
 def check_dataset(rdir):
 # After running the filter once, source and target are in a subdirectory
-    unf_dir = os.path.join(rdir, "unfiltered")
-    unf_src = os.path.join(unf_dir, f"unfiltered.{fm}")
-    unf_tgt = os.path.join(unf_dir, f"unfiltered.{to}")
+    unc_dir = os.path.join(rdir, "uncut")
+    unc_src = os.path.join(unf_dir, f"{corpus}.{fm}")
+    unc_tgt = os.path.join(unf_dir, f"{corpus}.{to}")
     if os.path.isfile(unf_src) and os.path.isfile(unf_tgt):
         print('Found source and target in the "unfiltered" subdirectory.')
-        return unf_src, unf_tgt
-# Otherwise, they may be already grouped
+        return unc_src, unc_tgt
+# Otherwise, they may be grouped (from train with argument data
     rsrc = os.path.join(rdir,"source.txt")
     rtgt = os.path.join(rdir, "target.txt")
     rdirname = os.path.basename(rdir)
@@ -213,7 +213,7 @@ def check_dataset(rdir):
     elif smartcounter == 2:
          print(f"Only found validation data in the {rdirname} directory. Verify the data.")
     else:
-         print(f"Cannot find unambiguous source and target in the {rdirname} directory. Broom it!")
+         print(f"Cannot find unambiguous source and target in the {rdirname} directory. Clean it!")
 
 # Look for a preprocessed corpus in direct direction...
 if os.path.isdir(corpus_dir):
@@ -239,7 +239,7 @@ else:
     for path, directories, files in os.walk(os.path.join(current_dir, "cache")):
         for file in files:
             if file == cache_fm:
-                print(f"Found {os.path.join(path, file)}, is downloaded in the same direction.")
+                print(f"Found {os.path.join(path, file)}, is downloaded in the stated direction.")
                 path_fm = os.path.join(path, cache_fm)
                 path_to = os.path.join(path, f"{corpus}.{fm}-{to}.{to}")
             elif file == cache_fm_reverse:
@@ -413,7 +413,7 @@ def filter_over(threshold) -> None:
     unf_dir = os.path.join(corpus_dir, "unfiltered")
     unf_src = os.path.join(unf_dir, f"unfiltered.{fm}")
     unf_tgt = os.path.join(unf_dir, f"unfiltered.{to}")
-    scores = scores_file
+    scores = scores_file #Wrong allocation (scores should be a path, not a str) serves an if branch later on
     if not os.path.isdir(unf_dir):
         os.makedirs(unf_dir)
     try:
@@ -439,8 +439,8 @@ def filter_over(threshold) -> None:
             move_to = os.path.join(rev_dir, f)
             os.rename(os.path.join(corpus_dir, f), move_to)
         if f == scores_file:
-            scores = cometkiwi_scores
-    if scores == scores_file:
+            scores = cometkiwi_scores #Real allocation for the variable
+    if scores == scores_file: #if not allocated properly in the former loop, then no scores have been calculated yet
             print(f"There has to be a scores list to filter. Proceeding to compute the scores now.")
             compute_scores()
             report_scores()
