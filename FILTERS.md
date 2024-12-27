@@ -33,6 +33,10 @@ is greather than max.
 * top_percentile (float) : dataset percentile where data collection begins
 * bottom_percentile (float) : percentile where data collection ends
   
+#### fast_lang
+<code>Removes lines written in other languages than the ones specified for training. To use it, you need to download fasttext model for language identification first and save it in a ./cache/fasttext/ directory.</code>
+* lid.176.bin from https://fasttext.cc/docs/en/language-identification.html
+  
 #### first_char_mismatch
 <code>Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.</code>
 
