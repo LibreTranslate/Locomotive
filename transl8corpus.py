@@ -6,7 +6,7 @@ from tqdm import tqdm
 import sentencepiece
 from tokenizer import BPETokenizer, SentencePieceTokenizer
 
-parser = argparse.ArgumentParser(description='Backtranslate with an argos-translate model')
+parser = argparse.ArgumentParser(description='Translate whole corpora with an argos-translate model to augment a dataset.')
 parser.add_argument('--source_lang', '-s',
     type=str,
     help='Language not to translate in corpus. Default: %(default)s')
