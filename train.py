@@ -10,6 +10,7 @@ import glob
 import yaml
 import subprocess
 import stanza
+import spacy
 import re
 import zipfile
 import ctranslate2
@@ -27,6 +28,9 @@ parser.add_argument('--config',
 parser.add_argument('--reverse',
     action='store_true',
     help='Reverse the source and target languages in the configuration and data sources. Default: %(default)s')
+parser.add_argument('--data',
+    action='store_true',
+    help='Only prepare data from the sources as specified in config, no shuffling, no deduplication. Default: %(default)s')
 parser.add_argument('--rerun',
     action='store_true',
     help='Rerun the training from scratch. Default: %(default)s')
@@ -45,6 +49,7 @@ parser.add_argument('--inflight',
 parser.add_argument('--byte_fallback_off',
     action='store_false',
     help='Disable byte fallback during SentencePiece training. Default is enabled (True).')
+
 
 
 args = parser.parse_args() 
@@ -75,8 +80,11 @@ current_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(current_dir, "cache")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
+fm_code = config['from']['code']
+to_code = config['to']['code']
 onmt_dir = os.path.join(run_dir, "opennmt")
 stanza_dir = os.path.join(run_dir, "stanza")
+spacy_dir = os.path.join(run_dir, "spacy")
 rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
@@ -110,13 +118,13 @@ for s in config['sources']:
         for f in [f.path for f in os.scandir(dir) if f.is_file()]:
             if "target" in f.lower():
                 target = f
-            elif f.lower().endswith(f".{config['to']['code']}"):
+            elif f.lower().endswith(f".{to_code}"):
                 target = f
                 skip_reverse = True
             
             if "source" in f.lower():
                 source = f
-            elif f.lower().endswith(f".{config['from']['code']}"):
+            elif f.lower().endswith(f".{fm_code}"):
                 source = f
                 skip_reverse = True
 
@@ -126,7 +134,9 @@ for s in config['sources']:
                 source, target = target, source
             sources[s] = {
                 'source': source,
+                'from': fm_code,
                 'target': target,
+                'to': to_code,	
                 'hash': md5,
                 'filters': filters,
                 'transforms': transforms,
@@ -202,17 +212,55 @@ for k in sources:
 
     print(f" - {k} (hash:{sources[k]['hash'][:7]})")
 
+# No shuffling, no deduplication!
+if args.data:
+    dataset = merge_shuffle(sources, run_dir, trace_filtered=True, max_eval_sentences=0, remove_duplicates=False)
+    print('Data prepared, ready for further processing.')
+    exit(1)
+
+#Segmentation library : Try to download stanza library for language, if nonexistent, use spacy multilingual 
 stanza_lang_code = config['from']['code']
-if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
+spacy_cache = os.path.join(cache_dir,"spacy")
+ 
+if os.path.isfile(os.path.join(spacy_dir, "senter", "model")):
+    print(f'Spacy library ready.')
+    segment_with = 'spacy'
+elif os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
+    print(f'Stanza library ready.')
+    segment_with = 'stanza'
+else:
     while True:
         try:
-            os.makedirs(stanza_dir, exist_ok=True)
-            stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
+            stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")             
+            segment_with = 'stanza'
             break
         except Exception as e:
-            print(f'Cannot download stanza model: {str(e)}')
-            exit(1)
+            if str(e).startswith('Unsupported language'):
+                print(f'Stanza said: " {str(e)}"; hence, will use spacy multilingual.')
+                os.remove(os.path.join(stanza_dir, "resources.json"))
+                os.rmdir(stanza_dir)
+# Spacy download is very verbose, trying to circumvent it.
+                if not os.path.isfile(os.path.join(spacy_cache, "senter", "model")):
+                    while True:                        
+                        try:
+                            spacy.cli.download("xx_sent_ud_sm")
+                            print(f'Downloaded spacy model. Writing to cache.')
+                            nlp = spacy.load("xx_sent_ud_sm")
+                            nlp.to_disk(spacy_cache)
+                            break
+                        except Exception as e:
+                            print(f'{str(e)}.')
+                            exit(1)							   
+                print(f'Spacy model cached. Copying...')
+                shutil.copytree(spacy_cache,spacy_dir)
+                print(f'Spacy library ready.')
+                segment_with = 'spacy'
+                break
+            else:            
+                print(f'{str(e)}.')
+                exit(1)           	
 
+# In case corpora have weights defined, load weighed chunks using round-robin (!!! MUCH slower !!!)
 all_weighted = sum([1 for k in sources if sources[k]['weight'] is not None]) == len(sources)
 if all_weighted:
     extract_flores_val(config['from']['code'], config['to']['code'], run_dir, dataset="devtest")
@@ -232,8 +280,8 @@ if not os.path.isfile(sp_model_path) or changed:
 
             spm.SentencePieceTrainer.train(input=datasets, 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
-                                            character_coverage=config.get('character_coverage', 1.0),
-                                            input_sentence_size=config.get('input_sentence_size', 1000000),
+                                            character_coverage=config.get('character_coverage', 0.9999),
+                                            input_sentence_size=config.get('input_sentence_size', 2000000),
                                             shuffle_input_sentence=True,
                                             byte_fallback=args.byte_fallback_off)
             break
@@ -304,7 +352,7 @@ onmt_config = {
     'src_subword_alpha': 0.0, 
     'tgt_subword_nbest': 1, 
     'tgt_subword_alpha': 0.0, 
-    'src_seq_length': 150, #onmt_train default is 192...
+    'src_seq_length': 150, #onmt_train default si 192...
     'tgt_seq_length': 150, 
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
@@ -487,7 +535,10 @@ with open(metadata_file, "w", encoding="utf-8") as f:
 
 shutil.copy(sp_model_path, package_folder)
 shutil.copytree(ct2_model_dir, os.path.join(package_folder, "model"))
-shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
+if segment_with == 'stanza' :
+    shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
+if segment_with == 'spacy' :
+    shutil.copytree(spacy_dir, os.path.join(package_folder, "spacy"))
 
 print(f"Writing {package_file}")
 zip_filename = os.path.join(run_dir, f"{package_slug}.zip")
