@@ -116,4 +116,11 @@ def first_char_mismatch(src, tgt):
         return True
     else:
         return src[0] != tgt[0]
-    
+		
+def fast_lang(src, tgt, s_lang, t_lang, model):
+    """
+    Removes lines when the languages detected using fasttext language identification differ from those specified in config.
+    """
+    return s_lang != model.predict(src)[0][0].replace("__label__", '') or \
+       t_lang != model.predict(tgt)[0][0].replace("__label__", '')
+ 	
