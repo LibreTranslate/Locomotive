@@ -27,7 +27,7 @@ optional arguments:
   --sample_size         Allows for faster inference and better memory use. Default: 32000
   --verbose             Sets loggers to other than ERROR level. (default: False)
   -s, --score			Computes and writes the scores for each sentence pair in a txt file. Requires GPU (optimized for one card).
-  -f, --filter			Filters sources and translations over a certain score threshold.
+  -f, --filter			Filters/cuts sources and translations under a certain score threshold.
   --model MODEL         COMET model to be used. Allows to use locally download checkpoint. (type: str, default: wmt20-cometkiwi-da)
 """
 import itertools
@@ -79,7 +79,7 @@ parser.add_argument(
     "--verbose", action="store_false", help="Sets all loggers to info instead of ERROR level."
 )
 parser.add_argument(
-    "-f", "--filter", type=float, help="Filters segments under the mentioned score."
+    "-f", "--filter", type=float, help="Filters segments under the mentioned score value."
 )
 parser.add_argument(
     "--sample_size", type=int, default=32000, help="Allows for faster inference on large files."
@@ -141,7 +141,7 @@ def check_dataset(rdir):
     unc_src = os.path.join(unf_dir, f"{corpus}.{fm}")
     unc_tgt = os.path.join(unf_dir, f"{corpus}.{to}")
     if os.path.isfile(unf_src) and os.path.isfile(unf_tgt):
-        print('Found source and target in the "unfiltered" subdirectory.')
+        print('Found source and target in the "uncut" subdirectory.')
         return unc_src, unc_tgt
 # Otherwise, they may be grouped (from train with argument data
     rsrc = os.path.join(rdir,"source.txt")
@@ -408,21 +408,21 @@ def report_scores() -> None:
 
 
 # Filter the sentence pairs over a specified threshold (usually, distribution median or peak)
-def filter_over(threshold) -> None:
+def cut_over(threshold) -> None:
 # First, move the source and target to a subdirectory (if not already done...)
-    unf_dir = os.path.join(corpus_dir, "unfiltered")
-    unf_src = os.path.join(unf_dir, f"unfiltered.{fm}")
-    unf_tgt = os.path.join(unf_dir, f"unfiltered.{to}")
+    unc_dir = os.path.join(corpus_dir, "uncut")
+    unc_src = os.path.join(unf_dir, f"{corpus}.{fm}")
+    unc_tgt = os.path.join(unf_dir, f"{corpus}.{to}")
     scores = scores_file #Wrong allocation (scores should be a path, not a str) serves an if branch later on
-    if not os.path.isdir(unf_dir):
-        os.makedirs(unf_dir)
+    if not os.path.isdir(unc_dir):
+        os.makedirs(unc_dir)
     try:
-        os.rename(source, unf_src)
-        os.rename(target, unf_tgt)
+        os.rename(source, unc_src)
+        os.rename(target, unc_tgt)
     except Exception as e:
         print(e)
-    fil_src = os.path.join(corpus_dir, f"{fm}{to}_{threshold}_{corpus}.{fm}")
-    fil_tgt = os.path.join(corpus_dir, f"{fm}{to}_{threshold}_{corpus}.{to}")
+    cut_src = os.path.join(corpus_dir, f"{fm}{to}_{threshold}_{corpus}.{fm}")
+    cut_tgt = os.path.join(corpus_dir, f"{fm}{to}_{threshold}_{corpus}.{to}")
 # Moves the formerly filtered files (source and target must be unique for further training) and initializes score source, or launches score computing
     files = [ f for f in os.listdir(corpus_dir) if os.path.isfile(os.path.join(corpus_dir,f)) ]
     for f in files:
@@ -452,10 +452,10 @@ def filter_over(threshold) -> None:
     print(f"Filtering sentence pairs scoring above {args.filter}.")
 # Open all files
     with open(scores, "r+b") as cfp, \
-        open(unf_src, "r+b") as sfp, \
-        open(unf_tgt, "r+b") as tfp, \
-        open(fil_src, "w", encoding="utf-8") as fsfp, \
-        open(fil_tgt, "w", encoding="utf-8") as ftfp:
+        open(unc_src, "r+b") as sfp, \
+        open(unc_tgt, "r+b") as tfp, \
+        open(cut_src, "w", encoding="utf-8") as csfp, \
+        open(cut_tgt, "w", encoding="utf-8") as ctfp:
 # Read input as memory maps
         sco_mm = mmap.mmap(cfp.fileno(), 0)
         src_mm = mmap.mmap(sfp.fileno(), 0)
@@ -480,15 +480,15 @@ def filter_over(threshold) -> None:
             progress_bar.update(1)
 
             if score >= args.filter:
-                fsfp.write(line_s + "\n")
-                ftfp.write(line_t + "\n")
+                csfp.write(line_s + "\n")
+                ctfp.write(line_t + "\n")
                 included_lines +=1
             else:
-                filtered_lines +=1
+                cut_lines +=1
 
         progress_bar.close()
 
-    print(f"Parsed {line_no} pairs, wrote {included_lines} in source and target files, filtered {filtered_lines} over {line_count}.") 
+    print(f"Parsed {line_no} pairs, wrote {included_lines} in source and target files, filtered {cut_lines} over {line_count}.") 
     print(f"Job done!")    
 
 
@@ -501,5 +501,5 @@ if __name__ == "__main__":
         compute_scores()
         report_scores()	
     if args.filter is not None:
-        fil_value = args.filter
-        filter_over(fil_value)		
+        threshold_value = args.filter
+        cut_over(threshold_value)		
