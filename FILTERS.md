@@ -36,6 +36,14 @@ is greather than max.
 #### fast_lang
 <code>Removes lines written in other languages than the ones specified for training. To use it, you need to download fasttext model for language identification first and save it in a ./cache/fasttext/ directory.</code>
 * written for use with lid.176.bin from https://fasttext.cc/docs/en/language-identification.html
+<code>Please note that fast text is distributed under CC-BY-SA licence. Credits follow:
+@article{joulin2016bag,
+  title={Bag of Tricks for Efficient Text Classification},
+  author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Mikolov, Tomas},
+  journal={arXiv preprint arXiv:1607.01759},
+  year={2016}
+}
+</code>
   
 #### first_char_mismatch
 <code>Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.</code>
