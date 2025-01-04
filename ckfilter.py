@@ -494,7 +494,7 @@ def cut_over(threshold) -> None:
 
         progress_bar.close()
 
-    print(f"Parsed {line_no} pairs, wrote {included_lines} in source and target files, filtered {cut_lines} over {line_count}.") 
+    print(f"Parsed {line_no} pairs, wrote {saved_lines} in source and target files, filtered {cut_lines} over {line_count}.") 
     print(f"Job done!")    
 
 
