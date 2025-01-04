@@ -1,6 +1,6 @@
 
-#!/usr/bin/env python3
 # Copyright (C) 2024 MEAE
+#!/usr/bin/env python3
 # Licensed under the CC-BY-NC-SA4.0 licence;
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -453,8 +453,8 @@ def cut_over(threshold) -> None:
 # Initialize counters 
     line_count = count_lines(scores)
     line_no = 0
-    included_lines = 0
-    filtered_lines = 0
+    saved_lines = 0
+    cut_lines = 0
     print(f"Filtering sentence pairs scoring above {args.filter}.")
 # Open all files
     with open(scores, "r+b") as cfp, \
@@ -488,7 +488,7 @@ def cut_over(threshold) -> None:
             if score >= args.filter:
                 csfp.write(line_s + "\n")
                 ctfp.write(line_t + "\n")
-                included_lines +=1
+                saved_lines +=1
             else:
                 cut_lines +=1
 
