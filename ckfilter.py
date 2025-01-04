@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2020 Unbabel
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Copyright (C) 2024 MEAE
+# Licensed under the CC-BY-NC-SA4.0 licence;
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Command for scoring and filtering training data with reference free cometkiwi-models.
+Command interface for scoring and filtering training data with reference free cometkiwi-models.
 ===============================
 
 optional arguments:
@@ -136,14 +135,14 @@ def regroup_dataset(dir):
 
 # Check regrouped aligned files and return correct source and target
 def check_dataset(rdir):
-# After running the filter once, source and target are in a subdirectory
+# When first running the filter, source and target are moved in the "uncut" subdirectory
     unc_dir = os.path.join(rdir, "uncut")
-    unc_src = os.path.join(unf_dir, f"{corpus}.{fm}")
-    unc_tgt = os.path.join(unf_dir, f"{corpus}.{to}")
-    if os.path.isfile(unf_src) and os.path.isfile(unf_tgt):
+    unc_src = os.path.join(unc_dir, f"{corpus}.{fm}")
+    unc_tgt = os.path.join(unc_dir, f"{corpus}.{to}")
+    if os.path.isfile(unc_src) and os.path.isfile(unc_tgt):
         print('Found source and target in the "uncut" subdirectory.')
         return unc_src, unc_tgt
-# Otherwise, they may be grouped (from train with argument data
+# Otherwise, they may be grouped (when using train.py with argument --data)
     rsrc = os.path.join(rdir,"source.txt")
     rtgt = os.path.join(rdir, "target.txt")
     rdirname = os.path.basename(rdir)
@@ -155,7 +154,7 @@ def check_dataset(rdir):
         if rdirname.startswith(to):
             print('Reverse direction detected, inverting source and target.')
             return rtgt, rsrc
-# or dispersed or poorly renamed in the directory
+# or dispersed (with basic train.py) or poorly renamed in the directory
     smartcounter = 0
     files = [ f for f in os.listdir(rdir) if os.path.isfile(os.path.join(rdir,f)) ]
     print(files)
@@ -409,11 +408,11 @@ def report_scores() -> None:
 
 # Filter the sentence pairs over a specified threshold (usually, distribution median or peak)
 def cut_over(threshold) -> None:
-# First, move the source and target to a subdirectory (if not already done...)
+# First, move the original source and target to the "uncut" subdirectory (otherwise, train.py uses it as data)
     unc_dir = os.path.join(corpus_dir, "uncut")
-    unc_src = os.path.join(unf_dir, f"{corpus}.{fm}")
-    unc_tgt = os.path.join(unf_dir, f"{corpus}.{to}")
-    scores = scores_file #Wrong allocation (scores should be a path, not a str) serves an if branch later on
+    unc_src = os.path.join(unc_dir, f"{corpus}.{fm}")
+    unc_tgt = os.path.join(unc_dir, f"{corpus}.{to}")
+    scores = scores_file #Dummy allocation (scores should be a path, not a str) serves an if branch later on
     if not os.path.isdir(unc_dir):
         os.makedirs(unc_dir)
     try:
@@ -426,11 +425,12 @@ def cut_over(threshold) -> None:
 # Moves the formerly filtered files (source and target must be unique for further training) and initializes score source, or launches score computing
     files = [ f for f in os.listdir(corpus_dir) if os.path.isfile(os.path.join(corpus_dir,f)) ]
     for f in files:
+	    # Move formerly filtered data into a proper subdirectory 
         if f.startswith(f"{fm}{to}_"):
-            fil_dir = os.path.join(corpus_dir, f"{fm}{to}")
-            if not os.path.isdir(fil_dir):
-                os.makedirs(fil_dir)
-            move_to = os.path.join(fil_dir, f)
+            drt_dir = os.path.join(corpus_dir, f"{fm}{to}")
+            if not os.path.isdir(drt_dir):
+                os.makedirs(drt_dir)
+            move_to = os.path.join(drt_dir, f)
             os.rename(os.path.join(corpus_dir, f), move_to)
         if f.startswith(f"{to}{fm}_"):
             rev_dir = os.path.join(corpus_dir, f"{to}{fm}")
