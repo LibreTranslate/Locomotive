@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 
+#!/usr/bin/env python3
 # Copyright (C) 2024 MEAE
 # Licensed under the CC-BY-NC-SA4.0 licence;
 # you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import itertools
 import json
 import logging
 import os
-import mmap
 import shutil
+import mmap
 
 import numpy as np
 import torch
@@ -141,6 +141,12 @@ def check_dataset(rdir):
     unc_tgt = os.path.join(unc_dir, f"{corpus}.{to}")
     if os.path.isfile(unc_src) and os.path.isfile(unc_tgt):
         print('Found source and target in the "uncut" subdirectory.')
+        return unc_src, unc_tgt
+# Former versions labelled it the "unfiltered" subdir, so rename it and the fles within for good measure
+    elif os.path.isdir(os.path.join(rdir, "unfiltered"):
+        os.rename(os.path.join(rdir, "unfiltered"), unc_dir)
+	os.rename(os.path.join(unc_dir, f"unfiltered.{fm}"), unc_src)
+	os.rename(os.path.join(unc_dir, f"unfiltered.{to}"), unc_tgt)
         return unc_src, unc_tgt
 # Otherwise, they may be grouped (when using train.py with argument --data)
     rsrc = os.path.join(rdir,"source.txt")
