@@ -243,27 +243,27 @@ def get_flores_dataset_path(dataset="dev"):
 #        print(f"Invalid dataset {dataset} (must be either dev or devtest)")
 #        exit(1)
     current_dir = os.path.dirname(__file__)
-    cache_dir = os.path.join(current_dir, "cache")
+    utils_dir = os.path.join(current_dir, "utils")
 
-    flores_dataset = os.path.join(cache_dir, "flores200_dataset", dataset)
+    flores_dataset = os.path.join(utils_dir, "flores200_dataset", dataset)
     if not os.path.isdir(flores_dataset):
-        os.makedirs(cache_dir, exist_ok=True)
+        os.makedirs(utils_dir, exist_ok=True)
     
         # Download first
         print("Downloading flores200 dataset...")
-        fname = os.path.join(cache_dir, "flores200.tar.gz")
+        fname = os.path.join(utils_dir, "flores200.tar.gz")
         flores_url = "https://tinyurl.com/flores200dataset"
-        download(flores_url, cache_dir, basename=os.path.basename(fname))
+        download(flores_url, utils_dir, basename=os.path.basename(fname))
 
         import tarfile
         with tarfile.open(fname) as f:
-            f.extractall(cache_dir)
+            f.extractall(utils_dir)
         
         if os.path.isfile(fname):
             os.unlink(fname)
 
         if not os.path.isdir(flores_dataset):
-            print(f"Cannot download flores200. Please manually download it from {flores_url} and place it in {cache_dir}")
+            print(f"Cannot download flores200. Please manually download it from {flores_url} and place it in {utils_dir}")
             exit(1)
 
     return flores_dataset
@@ -308,7 +308,7 @@ def merge_shuffle(sources, out_dir, trace_filtered=False, max_eval_sentences=500
     for f in [src_train, tgt_train]:
         if os.path.isfile(f):
             os.unlink(f)
-    fast_lang_path = os.path.join(os.path.dirname(__file__),"cache","fasttext","lid.176.bin")
+    fast_lang_path = os.path.join(os.path.dirname(__file__),"utils","fasttext","lid.176.bin")
     flmodel = fasttext.load_model(fast_lang_path)
 
     def process_source(k):
