@@ -63,7 +63,7 @@ except Exception as e:
     exit(1)
 
 current_dir = os.path.dirname(__file__)
-cache_dir = os.path.join(current_dir, "cache")
+utils_dir = os.path.join(current_dir, "utils")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
 ct2_model_dir = os.path.join(run_dir, "model")
@@ -76,7 +76,7 @@ if not os.path.isdir(ct2_model_dir) or (not os.path.isfile(sp_model) and not os.
 
 if args.pivot_from:
     pivot_dirname = f"{args.pivot_from}_{config['from']['code']}"
-    pivot_dir = os.path.join(current_dir, "run", pivot_dirname)
+    pivot_dir = os.path.join(utils_dir, pivot_dirname)
     ct2_pivot_dir = os.path.join(pivot_dir, "model")
     sp_pivot = os.path.join(pivot_dir, "sentencepiece.model")
     if not os.path.isdir(ct2_pivot_dir) or (not os.path.isfile(sp_model)):
@@ -85,7 +85,7 @@ if args.pivot_from:
 
 if args.pivot_to:
     pivot_dirname = f"{config['to']['code']}_{args.pivot_to}"
-    pivot_dir = os.path.join(current_dir, "run", pivot_dirname)
+    pivot_dir = os.path.join(utils_dir, pivot_dirname)
     ct2_pivot_dir = os.path.join(pivot_dir, "model")
     sp_pivot = os.path.join(pivot_dir, "sentencepiece.model")
     if not os.path.isdir(ct2_pivot_dir) or (not os.path.isfile(sp_model)):
