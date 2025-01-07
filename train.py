@@ -78,6 +78,7 @@ readme = f"# {config['from']['name']} - {config['to']['name']} version {config['
 
 current_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(current_dir, "cache")
+utils_dir = os.path.join(current_dir, "utils")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
 fm_code = config['from']['code']
@@ -88,6 +89,7 @@ spacy_dir = os.path.join(run_dir, "spacy")
 rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
+os.makedirs(utils_dir, exist_ok=True)
 
 if args.rerun and os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
@@ -220,7 +222,7 @@ if args.data:
 
 #Segmentation library : Try to download stanza library for language, if nonexistent, use spacy multilingual 
 stanza_lang_code = config['from']['code']
-spacy_cache = os.path.join(cache_dir,"spacy")
+spacy_utils = os.path.join(utils_dir,"spacy")
  
 if os.path.isfile(os.path.join(spacy_dir, "senter", "model")):
     print(f'Spacy library ready.')
@@ -240,19 +242,19 @@ else:
                 os.remove(os.path.join(stanza_dir, "resources.json"))
                 os.rmdir(stanza_dir)
 # Spacy download is very verbose, trying to circumvent it.
-                if not os.path.isfile(os.path.join(spacy_cache, "senter", "model")):
+                if not os.path.isfile(os.path.join(spacy_utils, "senter", "model")):
                     while True:                        
                         try:
                             spacy.cli.download("xx_sent_ud_sm")
-                            print(f'Downloaded spacy model. Writing to cache.')
+                            print(f'Downloaded spacy model. Writing to utils.')
                             nlp = spacy.load("xx_sent_ud_sm")
-                            nlp.to_disk(spacy_cache)
+                            nlp.to_disk(spacy_utils)
                             break
                         except Exception as e:
                             print(f'{str(e)}.')
                             exit(1)							   
-                print(f'Spacy model cached. Copying...')
-                shutil.copytree(spacy_cache,spacy_dir)
+                print(f'Spacy model saved. Copying...')
+                shutil.copytree(spacy_utils,spacy_dir)
                 print(f'Spacy library ready.')
                 segment_with = 'spacy'
                 break
