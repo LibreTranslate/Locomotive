@@ -103,18 +103,18 @@ if args.from_cache:
                 break
     run_dir = path_to_cache
 else:
-    if os.path.isdir(os.path.join(current_dir, "run", f"{src}_{piv}-1.1.{corpus}")):
+    if os.path.isdir(os.path.join(current_dir, "run", f"{src}_{piv}-{corpus}")):
         print('Pivot directory is direct.')
-        piv_dir = os.path.join(current_dir, "run", f"{src}_{piv}-1.1.{corpus}")
-        tgt_dir = os.path.join(current_dir, "run", f"{src}_{tgt}-1.1.{corpus}")
+        piv_dir = os.path.join(current_dir, "run", f"{src}_{piv}-{corpus}")
+        tgt_dir = os.path.join(current_dir, "run", f"{src}_{tgt}-{corpus}")
         reverse = False
-    elif os.path.isdir(os.path.join(current_dir, "run", f"{piv}_{src}-1.1.{corpus}")):
+    elif os.path.isdir(os.path.join(current_dir, "run", f"{piv}_{src}-{corpus}")):
         print('Pivot directory is reverse.')
-        piv_dir = os.path.join(current_dir, "run", f"{piv}_{src}-1.1.{corpus}")
-        tgt_dir = os.path.join(current_dir, "run", f"{tgt}_{src}-1.1.{corpus}")
+        piv_dir = os.path.join(current_dir, "run", f"{piv}_{src}-{corpus}")
+        tgt_dir = os.path.join(current_dir, "run", f"{tgt}_{src}-{corpus}")
         reverse = True
     else:
-        print(f"Not sure there is a data corpus to translate, please check subdirectories in run for {src}_{piv}-1.1.{corpus}")
+        print(f"Not sure there is a data corpus to translate, please check subdirectories in run for {src}_{piv}-{corpus}")
         exit(1)
     source = os.path.join(piv_dir, f"{corpus}.{src}")
     pivot = os.path.join(piv_dir, f"{corpus}.{piv}")

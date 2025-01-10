@@ -101,10 +101,11 @@ else:
 #Define working directories and filenames
 
 current_dir = os.path.dirname(__file__)
-scores_file = f"cometkiwi-scores-{fm}{to}.txt"
-corpus_dirname = f"{fm}_{to}-1.1.{corpus}"
-corpus_dirname_reverse = f"{to}_{fm}-1.1.{corpus}"
-corpus_dir = os.path.join(current_dir, "run", corpus_dirname)
+old_scores_file = f"cometkiwi-scores-{fm}{to}.txt"
+scores_file = f"{corpus}.{fm}-{to}.cometkiwi.scores"
+corpus_dirname_direct = f"{fm}_{to}-{corpus}"
+corpus_dirname_reverse = f"{to}_{fm}-{corpus}"
+corpus_dir_direct = os.path.join(current_dir, "run", corpus_dirname_direct)
 corpus_dir_reverse = os.path.join(current_dir, "run", corpus_dirname_reverse)
 
 # If a training set is present, it contains empty lines : suppress these yields an alignable file
@@ -143,10 +144,10 @@ def check_dataset(rdir):
         print('Found source and target in the "uncut" subdirectory.')
         return unc_src, unc_tgt
 # Former versions labelled it the "unfiltered" subdir, so rename it and the fles within for good measure
-    elif os.path.isdir(os.path.join(rdir, "unfiltered"):
+    elif os.path.isdir(os.path.join(rdir, "unfiltered")):
         os.rename(os.path.join(rdir, "unfiltered"), unc_dir)
-	os.rename(os.path.join(unc_dir, f"unfiltered.{fm}"), unc_src)
-	os.rename(os.path.join(unc_dir, f"unfiltered.{to}"), unc_tgt)
+        os.rename(os.path.join(unc_dir, f"unfiltered.{fm}"), unc_src)
+        os.rename(os.path.join(unc_dir, f"unfiltered.{to}"), unc_tgt)
         return unc_src, unc_tgt
 # Otherwise, they may be grouped (when using train.py with argument --data)
     rsrc = os.path.join(rdir,"source.txt")
@@ -221,13 +222,15 @@ def check_dataset(rdir):
          print(f"Cannot find unambiguous source and target in the {rdirname} directory. Clean it!")
 
 # Look for a preprocessed corpus in direct direction...
-if os.path.isdir(corpus_dir):
+if os.path.isdir(corpus_dir_direct):
     print("Found a preprocessed corpus (forward direction).")
     try:
-     	source, target = check_dataset(corpus_dir)
+     	source, target = check_dataset(corpus_dir_direct)
     except Exception as e:
         exit(1)		
 # ... then in the reverse direction ...
+    else:
+        corpus_dir = corpus_dir_direct
 elif os.path.isdir(corpus_dir_reverse):
     print("Found a preprocessed corpus (reverse direction).")
     try:
@@ -238,23 +241,25 @@ elif os.path.isdir(corpus_dir_reverse):
         corpus_dir = corpus_dir_reverse
 # ... then for downloaded corpora in the cache....
 else:
-    cache_fm = f"{corpus}.{fm}-{to}.{fm}"
+    cache_fm_direct = f"{corpus}.{fm}-{to}.{fm}"
     cache_fm_reverse = f"{corpus}.{to}-{fm}.{fm}"
     path_fm = None
     for path, directories, files in os.walk(os.path.join(current_dir, "cache")):
         for file in files:
-            if file == cache_fm:
+            if file == cache_fm_direct:
                 print(f"Found {os.path.join(path, file)}, is downloaded in the stated direction.")
-                path_fm = os.path.join(path, cache_fm)
+                path_fm = os.path.join(path, cache_fm_direct)
                 path_to = os.path.join(path, f"{corpus}.{fm}-{to}.{to}")
+                corpus_dir = corpus_dir_direct
             elif file == cache_fm_reverse:
                 print(f"Found {os.path.join(path, file)}, is downloaded in the reverse direction.")
                 path_fm = os.path.join(path, cache_fm_reverse)
                 path_to = os.path.join(path, f"{corpus}.{to}-{fm}.{to}")
+                corpus_dir = corpus_dir_reverse
             if path_fm is not None:
                 os.makedirs(corpus_dir)
-                source = os.path.join(corpus_dir, "source.txt")
-                target = os.path.join(corpus_dir, "target.txt")
+                source = os.path.join(corpus_dir, f"{corpus}.{fm}")
+                target = os.path.join(corpus_dir, f"{corpus}.{to}")
                 shutil.copy(path_fm, source)
                 shutil.copy(path_to, target)
                 print(f"Found cached files and copied them to {corpus_dir}.")
@@ -264,10 +269,12 @@ else:
 # Now we made sure source and target contain aligned sentence pairs and are ordered in the needed direction, wherever they may find themselves out. Or the script has aborted.
 # Define the file to write or read the scores
 cometkiwi_scores = os.path.join(corpus_dir, scores_file)
-
+old_scores = os.path.join(corpus_dir, old_scores_file)
 
 def compute_scores() -> None:
 # A few failsafes not to crash scores or in case the data is corrupt
+    if os.path.isfile(old_scores):
+        os.rename(old_scores, cometkiwi_scores)
     if os.path.isfile(cometkiwi_scores) and count_lines(cometkiwi_scores) == count_lines(source) == count_lines(target):
         print("Cometkiwi scores have already been computed, exiting the compute function.")
         exit(1)
@@ -281,12 +288,16 @@ def compute_scores() -> None:
 # Load model locally...
     seed_everything(1)
 
+# explicit path allows using "africomet" for african languages
     if args.model.endswith(".ckpt") and os.path.exists(args.model):
         model_path = args.model
+# but getting a cached version in the "utils" file is higly recommended
+    elif os.path.isfile(os.path.join(current_dir, "utils", "cometkiwi", "checkpoints", "model.ckpt")):
+        model_path = os.path.join(current_dir, "utils", "cometkiwi", "checkpoints", "model.ckpt")
 # ... or download model, but then, make sure a huggingface token is installed and the token account has acknowledged cometkiwi license.
     else:
         try:
-            model_path = download_model(args.model, saving_directory=os.path.join(current_dir, "cache", "wmt22-cometkiwi-da"))
+            model_path = download_model(args.model, saving_directory=os.path.join(current_dir, "utils", "wmt22-cometkiwi-da"))
         except Exception as e:
             print("A huggingface token should be installed, and the model's license acknowledged before downloading.")
             print(e)
@@ -393,20 +404,25 @@ def report_scores() -> None:
         score_over = score_over + score_histogram[j]
 # Then print the results
     print(f"The distribution peaks at value {round(score_values[x], 3)}, {score_over} sentence pairs score over this value.")
-    print(f"Job done!")
 # Try import matplotlib and plot a graph to visually check the distribution's regularity
     try:
         import matplotlib.pyplot as plt
-        if args.full_report:
-            plot_file = f"cometkiwi-fulldist-{args.corpus}-{args.fm}-{args.to}.png"
+        if args.full_report or median_score < 0.8:
+            plot_file = f"{args.corpus}-{args.fm}-{args.to}.cometkiwi-fulldist.png"
+            old_plot_file = f"cometkiwi-fulldist-{args.corpus}-{args.fm}-{args.to}.png"
             plt.hist(score_list, bins=1000, range=(0,1), density=False)            
         else:
-            plot_file = f"cometkiwi-dist-{args.corpus}-{args.fm}-{args.to}.png"
+            plot_file = f"{args.corpus}-{args.fm}-{args.to}.cometkiwi-dist.png"
+            old_plot_file = f"cometkiwi-dist-{args.corpus}-{args.fm}-{args.to}.png"
             plt.hist(score_list, bins=130, range=(0.8,0.93), density=False)
-        plt.title (f"Score distribution for {args.corpus} from {args.fm} to {args.to}")
         plot = os.path.join(corpus_dir, plot_file)
-        plt.savefig(plot)
-        print(f"Graph saved in corpus directory. Job done!")
+        if os.path.isfile(os.path.join(corpus_dir, old_plot_file)):
+            os.rename(os.path.join(corpus_dir, old_plot_file), plot)
+            print(f"Found and renamed old graph.")
+        else:
+            plt.title (f"Score distribution for {args.corpus} from {args.fm} to {args.to}")
+            plt.savefig(plot)
+            print(f"Graph saved in corpus directory.")
     except Exception as e:
         print(f"Matplotlib module absent.")
         print(e)

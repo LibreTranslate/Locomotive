@@ -54,6 +54,10 @@ then, save it in the ./cache/fasttext/ directory.
 #### first_char_mismatch
 <code>Removes lines when the first character is a letter but the case is mismatched, or the first character in source is not the same as the first character in target.</code>
 
+#### limit_latin_chars
+<code>Removes lines when the number of latin characters exceeds max. Useful with some corpora that exhibit mixed charsets in sentences when useful charset isn't "Latn".</code>
+  * max (int) : Maximum count (12)
+
 #### nonalphanum_count_mismatch
 <code>Removes lines when the sum of non-alphanumeric characters (except spaces) between source and target is not the same</code>
 

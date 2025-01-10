@@ -115,7 +115,7 @@ for s in config['sources']:
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
     
     def add_source_from(dir):
-        source, target = None, None
+        source, target, scores = None, None, None
         skip_reverse = False
         for f in [f.path for f in os.scandir(dir) if f.is_file()]:
             if "target" in f.lower():
@@ -129,6 +129,13 @@ for s in config['sources']:
             elif f.lower().endswith(f".{fm_code}"):
                 source = f
                 skip_reverse = True
+            
+            if f.lower().endswith(".scores"):
+                if not f.lower().endswith(".cometkiwi.scores"):
+                    laser = f.name.replace(".scores", ".laser.scores")
+                    os.rename(f, os.path.join(directory,laser)
+                scores = f
+                print (f)
 
 
         if source is not None and target is not None:
@@ -145,6 +152,8 @@ for s in config['sources']:
                 'augmenters': augmenters,
                 'weight': weight,
             }
+            if scores is not None:
+                sources['scores'] = scores
         else:
             print(f"Cannot find a source.txt and a target.txt in {s} ({dir}). Exiting...")
             exit(1)
