@@ -3,3 +3,4 @@ bleu.py
 data_with_scores.py
 langfilter.py
 transl8corpus.py
+__pycache__

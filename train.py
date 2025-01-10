@@ -115,7 +115,7 @@ for s in config['sources']:
     md5 = hashlib.md5(s.encode('utf-8')).hexdigest()
     
     def add_source_from(dir):
-        source, target,scores = None, None, None
+        source, target, scores = None, None, None
         skip_reverse = False
         for f in [f.path for f in os.scandir(dir) if f.is_file()]:
             if "target" in f.lower():
