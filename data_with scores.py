@@ -318,10 +318,12 @@ def merge_shuffle(sources, out_dir, trace_filtered=False, max_eval_sentences=500
         nonlocal total_count
         source = sources[k]['source']
         src_lang = sources[k]['from']
-        src_chset = nllb_langs[src_lang][-4:]
+        src_alph = nllb_langs[src_lang][-4:]
         target = sources[k]['target']
         tgt_lang = sources[k]['to']
-        tgt_chset = nllb_langs[tgt_lang][-4:]
+        tgt_alph = nllb_langs[tgt_lang][-4:]
+        if sources[k]['laser'] is not None:
+            laser = sources[k]['laser']
         if sources[k]['weight'] is not None:
             return
         
@@ -335,7 +337,7 @@ def merge_shuffle(sources, out_dir, trace_filtered=False, max_eval_sentences=500
                 def get_func(name):
                     kwargs = dict(f[name])
                     if name == 'limit_latin_char':
-                        kwargs = {"s_chset": src_chset, "t_chset": tgt_chset, **kwargs}
+                        kwargs = {"s_alph": src_alph, "t_alph": tgt_alph, **kwargs}
                     func = getattr(filter_funcs, name)
                     lam = lambda src, tgt: func(src, tgt, **kwargs)
                     lam.__name__ = name
@@ -411,7 +413,7 @@ def merge_shuffle(sources, out_dir, trace_filtered=False, max_eval_sentences=500
             tgt_mm = mmap.mmap(tgt_fp.fileno(), 0)
             src_it = iter(src_mm.readline, b"")
             tgt_it = iter(tgt_mm.readline, b"")
-
+            
             for src_line in src_it:
                 #Exit after "stop_at" line if excerpt or top filter on
                 if stop_at is not None and line_no > stop_at:
