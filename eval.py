@@ -57,7 +57,7 @@ except Exception as e:
     exit(1)
 
 current_dir = os.path.dirname(__file__)
-cache_dir = os.path.join(current_dir, "cache")
+utils_dir = os.path.join(current_dir, "utils")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
 ct2_model_dir = os.path.join(run_dir, "model")

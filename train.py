@@ -69,6 +69,7 @@ readme = f"# {config['from']['name']} - {config['to']['name']} version {config['
 
 current_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(current_dir, "cache")
+utils_dir = os.path.join(current_dir, "utils")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
 onmt_dir = os.path.join(run_dir, "opennmt")
@@ -76,6 +77,7 @@ stanza_dir = os.path.join(run_dir, "stanza")
 rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
+os.makedirs(utils_dir, exist_ok=True)
 
 if args.rerun and os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
