@@ -88,10 +88,10 @@ if args.pivot:
             print(f"Pivoting to {args.pivot} using {subdir}.")
             pivot_to = True
     if pivot_from and pivot_to:
-        print('Pivot is ambiguous: delete the models not needed for pivoting from "utils".')
+        print('Pivot is ambiguous: delete the model not needed for this pivot from "utils".')
         exit(1)
     if not pivot_from and not pivot_to:
-        print('No valid model for pivot. Switch off pivot or unzip the model into "utils".')
+        print('No valid model for pivot: unzip the pivot Argos package into "utils".')
         exit(1)
 
 def pivot_translator():

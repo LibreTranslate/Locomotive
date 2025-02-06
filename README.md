@@ -220,7 +220,7 @@ BLEU score: 27.44794
 ```
 You can also install further COMET models [AfriCOMET](https://github.com/masakhane-io/africomet) and update the script to use them.
 
-<mark>Unzip the necessary Argos package(s) into the "utils" directory first prior to using arg --pivot to evaluate a composite translation (i.e. to or from a third language).</mark>
+<mark>Unzip the necessary Argos package(s) to the "utils" directory before using arg --pivot to evaluate a composite translation</mark> (i.e. to or from a third language).
 
 ## Convert Helsinki-NLP OPUS MT models
 
