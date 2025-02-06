@@ -127,7 +127,9 @@ for s in config['sources']:
                 source, target = target, source
             sources[s] = {
                 'source': source,
+                'from': config['from']['code'],
                 'target': target,
+                'to': config['to']['code'],
                 'hash': md5,
                 'filters': filters,
                 'transforms': transforms,

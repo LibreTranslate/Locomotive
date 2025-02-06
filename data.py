@@ -10,6 +10,7 @@ from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
 import augmenters as augment_funcs
+import fasttext
 from removedup import rdup
 from fastshuffle import file_shuffle_sample
 from io import StringIO
@@ -311,11 +312,15 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     for f in [src_train, tgt_train]:
         if os.path.isfile(f):
             os.unlink(f)
+    fast_lang_path = os.path.join(os.path.dirname(__file__),"utils","fasttext","lid.176.bin")
+    flmodel = fasttext.load_model(fast_lang_path)
 
     def process_source(k):
         nonlocal total_count
         source = sources[k]['source']
+        src_lang = sources[k]['from']
         target = sources[k]['target']
+        tgt_lang = sources[k]['to']
         if sources[k]['weight'] is not None:
             return
         
@@ -334,6 +339,15 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                     lam.__args__ = kwargs
                     return lam 
                 filters.append(get_func(func_name))
+            elif f == "fast_lang":
+                def fastlang_func():
+                    kwargs = {"s_lang": src_lang, "t_lang": tgt_lang, "model": flmodel}
+                    func = getattr(filter_funcs, "fast_lang")
+                    lam = lambda src, tgt: func(src, tgt, **kwargs)
+                    lam.__name__ = "fast_lang"
+                    lam.__args__ = kwargs
+                    return lam
+                filters.append(fastlang_func())
             else:
                 filters.append(getattr(filter_funcs, f))
         
