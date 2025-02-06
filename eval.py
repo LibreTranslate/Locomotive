@@ -44,7 +44,7 @@ parser.add_argument('--cpu',
     help='Force CPU use. Default: %(default)s')
 parser.add_argument('--max-batch-size',
     type=int,
-    default=16,
+    default=32, #as in argostranslate
     help='Max batch size for translation. Default: %(default)s')
 
 
@@ -88,10 +88,10 @@ if args.pivot:
             print(f"Pivoting to {args.pivot} using {subdir}.")
             pivot_to = True
     if pivot_from and pivot_to:
-        print('Pivot is ambiguous: delete the models not needed for pivoting from "utils".')
+        print('Pivot is ambiguous: delete the model not needed for this pivot from "utils".')
         exit(1)
     if not pivot_from and not pivot_to:
-        print('No valid model for pivot. Switch off pivot or unzip the model into "utils".')
+        print('No valid model for pivot: unzip the pivot Argos package into "utils".')
         exit(1)
 
 def pivot_translator():
@@ -140,7 +140,7 @@ if args.bleu or args.flores_id or args.translate_flores or args.comet is not Non
         dataset = args.flores_dataset
     src_text = get_flores(config["from"]["code"], dataset)
     tgt_text = get_flores(config["to"]["code"], dataset)
-    
+
     if args.flores_id is not None:
         src_text = [src_text[args.flores_id]]
         tgt_text = [tgt_text[args.flores_id]]
