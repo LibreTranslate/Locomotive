@@ -4,7 +4,6 @@ import json
 import os
 import argparse
 import hashlib
-import zipfile
 import shutil
 import glob
 import yaml
@@ -256,20 +255,23 @@ if not os.path.isfile(sp_model_path) or changed:
                 exit(1)
 
 os.makedirs(onmt_dir, exist_ok=True)
+# different transforms at train & valid because of tokenization bug in onmt3.5
+# RoPE+gated-activation requires upgrading, further details on architecture at upcoming TRANSFORMERS.md
+train_transforms = ['sentencepiece', 'filtertoolong']
+valid_transforms = ['sentencepiece']
 
-transforms = ['sentencepiece', 'filtertoolong']
 corpora = {
     'valid': {
         'path_src': f'{rel_run_dir}/src-val.txt',
         'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-        'transforms': transforms
+        'transforms': valid_transforms
     }
 }
 if has_merged:
     corpora['corpus_1'] = {
         'path_src': f'{rel_run_dir}/src-train.txt',
         'path_tgt': f'{rel_run_dir}/tgt-train.txt',
-        'transforms': transforms,
+        'transforms': train_transforms,
         'weight': 1
     }
 
@@ -279,15 +281,15 @@ for k in sources:
             'path_src': sources[k]['source'],
             'path_tgt': sources[k]['target'],
             'weight': sources[k]['weight'],
-            'transforms': transforms,
+            'transforms': train_transforms,
         }
 
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'tgt_vocab': f"{rel_onmt_dir}/openmt.vocab",
-    'src_vocab_size': config.get('vocab_size', 50000),
-    'tgt_vocab_size': config.get('vocab_size', 50000),
+    'src_vocab_size': config.get('vocab_size', 50000), #default onmt value: 32768
+    'tgt_vocab_size': config.get('vocab_size', 50000), #same as latter
     'share_vocab': True, 
     'data': corpora, 
     'src_subword_type': 'sentencepiece',
@@ -306,8 +308,8 @@ onmt_config = {
     'src_subword_alpha': 0.0, 
     'tgt_subword_nbest': 1, 
     'tgt_subword_alpha': 0.0, 
-    'src_seq_length': 150, 
-    'tgt_seq_length': 150, 
+    'src_seq_length': 150, #onmt_train default si 192...
+    'tgt_seq_length': 150, #same as former
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
     'save_checkpoint_steps': 2500, 
@@ -339,8 +341,9 @@ onmt_config = {
     'normalization': 'tokens', 
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
-    'position_encoding': True,
-    # 'max_relative_positions': 20,
+    'position_encoding': True, #onmt default, FAlse for relative [Shaw] and rotative  [RoPE] position encoding
+    'max_relative_positions': 0, #onmt default, 20 and 32 will do Shaw, -1 will do RoPE
+	'pos_ffn_activation_fn': 'relu', #to use "gated-gelu" or "silu", modify the CTranslate2 converter
     'enc_layers': 6, 
     'dec_layers': 6,
     'heads': 8,
@@ -354,6 +357,7 @@ onmt_config = {
     'share_decoder_embeddings': True,
     'share_embeddings': True,
     'valid_metrics': ['BLEU'],
+    'seed': -1, #onmt_default (auto seed) -when researching : any positive value-
 }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
