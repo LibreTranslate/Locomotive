@@ -241,13 +241,15 @@ def sources_changed(sources, out_dir):
     return True
 
 def get_flores_dataset_path(dataset="dev"):
-    if dataset != "dev" and dataset != "devtest":
-        print(f"Invalid dataset {dataset} (must be either dev or devtest)")
-        exit(1)
+    # Swap the definitions to allow looking for translation memoirs
     current_dir = os.path.dirname(__file__)
     utils_dir = os.path.join(current_dir, "utils")
-
     flores_dataset = os.path.join(utils_dir, "flores200_dataset", dataset)
+
+    if dataset != "dev" and dataset != "devtest" and not os.path.isdir(flores_dataset):
+        print(f"Invalid dataset {dataset} (must be either dev, devtest), or a valid translation memoir.")
+        exit(1)
+
     if not os.path.isdir(flores_dataset):
         os.makedirs(utils_dir, exist_ok=True)
     
@@ -278,7 +280,9 @@ def get_flores_file_path(lang_code, dataset="dev"):
 def get_flores(lang_code, dataset="dev"):
     flores_dataset = get_flores_dataset_path(dataset)
     source = os.path.join(flores_dataset, nllb_langs[lang_code] + f".{dataset}")
-
+    if not os.path.isfile(source) and dataset != "dev" and dataset != "devtest":
+        print(f"The memoir version for {lang_code} is missing or should be renamed {nllb_langs[lang_code]}.{dataset}")
+        exit(1)
     vs = [line.rstrip('\n') for line in open(source, encoding="utf-8")]
     return vs
 
