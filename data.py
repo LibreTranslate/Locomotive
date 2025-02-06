@@ -319,8 +319,10 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         nonlocal total_count
         source = sources[k]['source']
         src_lang = sources[k]['from']
+        src_chset = nllb_langs[src_lang][-4:]
         target = sources[k]['target']
         tgt_lang = sources[k]['to']
+        tgt_chset = nllb_langs[tgt_lang][-4:]
         if sources[k]['weight'] is not None:
             return
         
@@ -334,6 +336,8 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 def get_func(name):
                     kwargs = dict(f[name])
                     func = getattr(filter_funcs, name)
+                    if name == 'limit_latin_chars':
+                        kwargs = {"s_chset": src_chset, "t_chset": tgt_chset, **kwargs}
                     lam = lambda src, tgt: func(src, tgt, **kwargs)
                     lam.__name__ = name
                     lam.__args__ = kwargs
@@ -464,7 +468,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     def write_lines():
         with open(os.path.join(out_dir, "src.txt"), "w", encoding="utf-8") as src, \
              open(os.path.join(out_dir, "tgt.txt"), "w", encoding="utf-8") as tgt:
-             while True:
+            while True:
                 count = len(lines)
                 if count > 0:
                     sbuf = StringIO()

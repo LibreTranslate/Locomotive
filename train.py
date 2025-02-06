@@ -281,7 +281,7 @@ onmt_config = {
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'tgt_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'src_vocab_size': config.get('vocab_size', 50000), #default onmt value: 32768
-    'tgt_vocab_size': config.get('vocab_size', 50000), #same as latter
+    'tgt_vocab_size': config.get('vocab_size', 50000), #same as former
     'share_vocab': True, 
     'data': corpora, 
     'src_subword_type': 'sentencepiece',
@@ -333,7 +333,7 @@ onmt_config = {
     'normalization': 'tokens', 
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
-    'position_encoding': True, #onmt default, FAlse for relative [Shaw] and rotative  [RoPE] position encoding
+    'position_encoding': True, #onmt default, False for relative [Shaw] and rotative  [RoPE] position encoding
     'max_relative_positions': 0, #onmt default, 20 and 32 will do Shaw, -1 will do RoPE
 	'pos_ffn_activation_fn': 'relu', #to use "gated-gelu" or "silu", modify the CTranslate2 converter
     'enc_layers': 6, 
