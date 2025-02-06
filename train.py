@@ -8,7 +8,6 @@ import shutil
 import glob
 import yaml
 import subprocess
-import stanza
 import re
 import zipfile
 import ctranslate2
@@ -17,6 +16,7 @@ from net import download
 from data import sources_changed, merge_shuffle, extract_flores_val
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
+from sbd import package_sbd
 
 parser = argparse.ArgumentParser(description='Train LibreTranslate compatible models')
 parser.add_argument('--config',
@@ -77,7 +77,6 @@ utils_dir = os.path.join(current_dir, "utils")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
 onmt_dir = os.path.join(run_dir, "opennmt")
-stanza_dir = os.path.join(run_dir, "stanza")
 rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
@@ -204,16 +203,7 @@ for k in sources:
 
     print(f" - {k} (hash:{sources[k]['hash'][:7]})")
 
-stanza_lang_code = config['from']['code']
-if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
-    while True:
-        try:
-            os.makedirs(stanza_dir, exist_ok=True)
-            stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
-            break
-        except Exception as e:
-            print(f'Cannot download stanza model: {str(e)}')
-            exit(1)
+packaged_sbd = package_sbd(run_dir, config['from']['code'])
 
 all_weighted = sum([1 for k in sources if sources[k]['weight'] is not None]) == len(sources)
 if all_weighted:
@@ -492,7 +482,8 @@ with open(metadata_file, "w", encoding="utf-8") as f:
 
 shutil.copy(sp_model_path, package_folder)
 shutil.copytree(ct2_model_dir, os.path.join(package_folder, "model"))
-shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
+if os.path.isdir(packaged_sbd):
+    shutil.copytree(packaged_sbd, os.path.join(package_folder, os.path.basename(packaged_sbd)))
 
 print(f"Writing {package_file}")
 zip_filename = os.path.join(run_dir, f"{package_slug}.zip")
