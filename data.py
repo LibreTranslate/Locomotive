@@ -10,7 +10,6 @@ from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
 import augmenters as augment_funcs
-import fasttext
 from removedup import rdup
 from fastshuffle import file_shuffle_sample
 from io import StringIO
@@ -312,8 +311,15 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     for f in [src_train, tgt_train]:
         if os.path.isfile(f):
             os.unlink(f)
-    fast_lang_path = os.path.join(os.path.dirname(__file__),"utils","fasttext","lid.176.bin")
-    flmodel = fasttext.load_model(fast_lang_path)
+
+    fasttext_path = None
+    for s in sources:
+        for f in sources[s]['filters']:
+            if f == "fast_lang":
+                fasttext_path = os.path.join(os.path.dirname(__file__),"utils","fasttext","lid.176.bin")
+    if fasttext_path is not None:
+        import fasttext
+        flmodel = fasttext.load_model(fasttext_path)
 
     def process_source(k):
         nonlocal total_count
