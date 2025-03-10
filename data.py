@@ -10,7 +10,6 @@ from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
 import augmenters as augment_funcs
-from removedup import rdup
 from fastshuffle import file_shuffle_sample
 from io import StringIO
 
@@ -502,6 +501,46 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     finished = True
     writer.join()
 
+    #Use hashes of lines to sort duplicates for memory and compute efficiency
+    def hash_line(line):
+        return hashlib.md5(line.encode('utf-8')).hexdigest()
+
+    # Find duplicates (common hashes in both files)
+    def deduplicate(source, target):
+        source_dir = os.path.dirname(source)
+
+        with open(source, 'r+b') as src_fp, open(target, 'r+b') as tgt_fp, \
+                open(os.path.join(source_dir, "dedupsrc.txt"), 'w', encoding="utf-8") as dsc_fp, \
+                open(os.path.join(source_dir, "deduptgt.txt"), 'w', encoding="utf-8") as dtg_fp:
+
+            src_mm = mmap.mmap(src_fp.fileno(), 0)
+            tgt_mm = mmap.mmap(tgt_fp.fileno(), 0)
+            src_it = iter(src_mm.readline, b'')
+            tgt_it = iter(tgt_mm.readline, b'')
+            read = set()
+            duplicount = 0
+
+            for src_line in src_it:
+                line_s = src_line.decode("utf-8").strip()
+                line_t = next(tgt_it).decode("utf-8").strip()
+                hash_tuple = (hash_line(line_s), hash_line(line_t))
+
+                if hash_tuple in read:
+                    duplicount += 1
+                else:
+                    read.add(hash_tuple)
+                    dsc_fp.write(line_s + '\n')
+                    dtg_fp.write(line_t + '\n')
+            src_mm.close()
+            tgt_mm.close()
+        os.unlink(source)
+        os.unlink(target)
+        os.rename(os.path.join(source_dir, "dedupsrc.txt"), source)
+        os.rename(os.path.join(source_dir, "deduptgt.txt"), target)
+        return(source, target, duplicount)
+
+
+
     if total_count * 0.2 < max_eval_sentences:
         max_eval_sentences = total_count * 0.2
     max_eval_sentences = int(max_eval_sentences)
@@ -510,7 +549,13 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         print("No sources merged")
         return
 
-    print(f"Training size: {total_count - max_eval_sentences}")
+    if remove_duplicates:
+        print("Removing duplicates")
+        src, tgt, removed = deduplicate(os.path.join(out_dir, "src.txt"), os.path.join(out_dir, "tgt.txt"))
+        print(f"Removed {removed} lines")
+    else: removed = 0
+
+    print(f"Training size: {total_count - removed - max_eval_sentences}")
     print(f"Validation size: {max_eval_sentences}")
 
     print("Writing shuffled sets")
@@ -521,15 +566,6 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     os.rename(tgt, tgt_train)
     os.rename(src_sample, os.path.join(out_dir, "src-val.txt"))
     os.rename(tgt_sample, os.path.join(out_dir, "tgt-val.txt"))
-    
-    if remove_duplicates:
-        print("Removing duplicates")
-        src, tgt, removed = rdup(src_train, tgt_train)
-        print(f"Removed {removed} lines")
-        os.unlink(src_train)
-        os.unlink(tgt_train)
-        os.rename(src, src_train)
-        os.rename(tgt, tgt_train)
 
     os.unlink(os.path.join(out_dir, "src.txt"))
     os.unlink(os.path.join(out_dir, "tgt.txt"))
