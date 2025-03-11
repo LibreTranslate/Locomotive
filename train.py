@@ -4,12 +4,10 @@ import json
 import os
 import argparse
 import hashlib
-import zipfile
 import shutil
 import glob
 import yaml
 import subprocess
-import stanza
 import re
 import zipfile
 import ctranslate2
@@ -18,6 +16,7 @@ from net import download
 from data import sources_changed, merge_shuffle, extract_flores_val
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
+from sbd import package_sbd
 
 parser = argparse.ArgumentParser(description='Train LibreTranslate compatible models')
 parser.add_argument('--config',
@@ -42,6 +41,11 @@ parser.add_argument('--toy',
 parser.add_argument('--inflight',
     action='store_true',
     help='While training is in progress on a separate process, you can launch another instance of train.py with this flag turned on to build a model from the last available checkpoints rather that waiting until the end. Default: %(default)s')
+parser.add_argument('--byte_fallback_off',
+    action='store_false',
+    help='Disable byte fallback during SentencePiece training. Default is enabled (True).')
+
+
 
 args = parser.parse_args() 
 try:
@@ -69,13 +73,14 @@ readme = f"# {config['from']['name']} - {config['to']['name']} version {config['
 
 current_dir = os.path.dirname(__file__)
 cache_dir = os.path.join(current_dir, "cache")
+utils_dir = os.path.join(current_dir, "utils")
 model_dirname = f"{config['from']['code']}_{config['to']['code']}-{config['version']}"
 run_dir = os.path.join(current_dir, "run", model_dirname)
 onmt_dir = os.path.join(run_dir, "opennmt")
-stanza_dir = os.path.join(run_dir, "stanza")
 rel_run_dir = f"run/{model_dirname}"
 rel_onmt_dir = f"{rel_run_dir}/opennmt"
 os.makedirs(cache_dir, exist_ok=True)
+os.makedirs(utils_dir, exist_ok=True)
 
 if args.rerun and os.path.isdir(run_dir):
     shutil.rmtree(run_dir)
@@ -122,7 +127,9 @@ for s in config['sources']:
                 source, target = target, source
             sources[s] = {
                 'source': source,
+                'from': config['from']['code'],
                 'target': target,
+                'to': config['to']['code'],
                 'hash': md5,
                 'filters': filters,
                 'transforms': transforms,
@@ -198,16 +205,7 @@ for k in sources:
 
     print(f" - {k} (hash:{sources[k]['hash'][:7]})")
 
-stanza_lang_code = config['from']['code']
-if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
-    while True:
-        try:
-            os.makedirs(stanza_dir, exist_ok=True)
-            stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
-            break
-        except Exception as e:
-            print(f'Cannot download stanza model: {str(e)}')
-            exit(1)
+packaged_sbd = package_sbd(run_dir, config['from']['code'])
 
 all_weighted = sum([1 for k in sources if sources[k]['weight'] is not None]) == len(sources)
 if all_weighted:
@@ -225,12 +223,14 @@ if not os.path.isfile(sp_model_path) or changed:
             for k in sources:
                 if sources[k]['weight'] is not None:
                     datasets += [sources[k]['source'], sources[k]['target']]
-
+            #Byte-fallback (train byte tokens with character_coverage 0.9999, 0.9995 for CJK
+            # doubling sentence input makes for more accurate sampling
             spm.SentencePieceTrainer.train(input=datasets, 
                                             model_prefix=f"{run_dir}/sentencepiece", vocab_size=config.get('vocab_size', 50000),
-                                            character_coverage=config.get('character_coverage', 1.0),
-                                            input_sentence_size=config.get('input_sentence_size', 1000000),
-                                            shuffle_input_sentence=True)
+                                            character_coverage=config.get('character_coverage', 0.9999),
+                                            input_sentence_size=config.get('input_sentence_size', 2000000),
+                                            shuffle_input_sentence=True,
+                                            byte_fallback=args.byte_fallback_off)
             break
         except Exception as e:
             err = str(e)
@@ -247,20 +247,23 @@ if not os.path.isfile(sp_model_path) or changed:
                 exit(1)
 
 os.makedirs(onmt_dir, exist_ok=True)
+# different transforms at train & valid because of tokenization bug in onmt3.5
+# RoPE+gated-activation requires upgrading, further details on architecture at upcoming TRANSFORMERS.md
+train_transforms = ['sentencepiece', 'filtertoolong']
+valid_transforms = ['sentencepiece']
 
-transforms = ['sentencepiece', 'filtertoolong']
 corpora = {
     'valid': {
         'path_src': f'{rel_run_dir}/src-val.txt',
         'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-        'transforms': transforms
+        'transforms': valid_transforms
     }
 }
 if has_merged:
     corpora['corpus_1'] = {
         'path_src': f'{rel_run_dir}/src-train.txt',
         'path_tgt': f'{rel_run_dir}/tgt-train.txt',
-        'transforms': transforms,
+        'transforms': train_transforms,
         'weight': 1
     }
 
@@ -270,15 +273,15 @@ for k in sources:
             'path_src': sources[k]['source'],
             'path_tgt': sources[k]['target'],
             'weight': sources[k]['weight'],
-            'transforms': transforms,            
+            'transforms': train_transforms,
         }
 
 onmt_config = {
     'save_data': rel_onmt_dir,
     'src_vocab': f"{rel_onmt_dir}/openmt.vocab",
     'tgt_vocab': f"{rel_onmt_dir}/openmt.vocab",
-    'src_vocab_size': config.get('vocab_size', 50000),
-    'tgt_vocab_size': config.get('vocab_size', 50000),
+    'src_vocab_size': config.get('vocab_size', 50000), #default onmt value: 32768
+    'tgt_vocab_size': config.get('vocab_size', 50000), #same as former
     'share_vocab': True, 
     'data': corpora, 
     'src_subword_type': 'sentencepiece',
@@ -297,8 +300,8 @@ onmt_config = {
     'src_subword_alpha': 0.0, 
     'tgt_subword_nbest': 1, 
     'tgt_subword_alpha': 0.0, 
-    'src_seq_length': 150, 
-    'tgt_seq_length': 150, 
+    'src_seq_length': 150, #onmt_train default si 192...
+    'tgt_seq_length': 150, #same as former
     'skip_empty_level': 'silent', 
     'save_model': f'{rel_onmt_dir}/openmt.model', 
     'save_checkpoint_steps': 2500, 
@@ -330,8 +333,9 @@ onmt_config = {
     'normalization': 'tokens', 
     'encoder_type': 'transformer', 
     'decoder_type': 'transformer', 
-    'position_encoding': True,
-    # 'max_relative_positions': 20,
+    'position_encoding': True, #onmt default, False for relative [Shaw] and rotative  [RoPE] position encoding
+    'max_relative_positions': 0, #onmt default, 20 and 32 will do Shaw, -1 will do RoPE
+	'pos_ffn_activation_fn': 'relu', #to use "gated-gelu" or "silu", modify the CTranslate2 converter
     'enc_layers': 6, 
     'dec_layers': 6,
     'heads': 8,
@@ -345,6 +349,7 @@ onmt_config = {
     'share_decoder_embeddings': True,
     'share_embeddings': True,
     'valid_metrics': ['BLEU'],
+    'seed': -1, #onmt_default (auto seed) -when researching : any positive value-
 }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
@@ -479,7 +484,8 @@ with open(metadata_file, "w", encoding="utf-8") as f:
 
 shutil.copy(sp_model_path, package_folder)
 shutil.copytree(ct2_model_dir, os.path.join(package_folder, "model"))
-shutil.copytree(stanza_dir, os.path.join(package_folder, "stanza"))
+if os.path.isdir(packaged_sbd):
+    shutil.copytree(packaged_sbd, os.path.join(package_folder, os.path.basename(packaged_sbd)))
 
 print(f"Writing {package_file}")
 zip_filename = os.path.join(run_dir, f"{package_slug}.zip")

@@ -9,5 +9,8 @@
  * chars (list(str)|str) : List of characters or words
 
 #### remove_unpaired_quotes_and_brackets
-<code>Removes unmatched quotations (“, ”, ", «, ») and parentheses ((, ), [, ], {, })</code>
+<code>Removes unmatched quotations (ï¿½, ï¿½, ", ï¿½, ï¿½) and parentheses ((, ), [, ], {, })</code>
+
+#### recode_html_escape_chars
+<code>Recodes HTML escape characters (' &apos; ', ' &quot; ', etc.) appearing in opus://UNPC (evt. other)</code>
 

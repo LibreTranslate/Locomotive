@@ -10,134 +10,206 @@ from net import download
 import filters as filter_funcs
 import transforms as transform_funcs
 import augmenters as augment_funcs
-from removedup import rdup
 from fastshuffle import file_shuffle_sample
 from io import StringIO
 
-nllb_langs = {
-    "af":"afr_Latn",
-    "ak":"aka_Latn",
-    "am":"amh_Ethi",
-    "ar":"arb_Arab",
-    "as":"asm_Beng",
-    "ay":"ayr_Latn",
-    "az":"azj_Latn",
-    "bm":"bam_Latn",
-    "be":"bel_Cyrl",
-    "bn":"ben_Beng",
-    "bho":"bho_Deva",
-    "bs":"bos_Latn",
-    "bg":"bul_Cyrl",
-    "ca":"cat_Latn",
-    "ceb":"ceb_Latn",
-    "cs":"ces_Latn",
-    "ckb":"ckb_Arab",
-    "tt":"crh_Latn",
-    "cy":"cym_Latn",
-    "da":"dan_Latn",
-    "de":"deu_Latn",
-    "el":"ell_Grek",
-    "en":"eng_Latn",
-    "eo":"epo_Latn",
-    "et":"est_Latn",
-    "eu":"eus_Latn",
-    "ee":"ewe_Latn",
-    "fa":"pes_Arab",
-    "fi":"fin_Latn",
-    "fr":"fra_Latn",
-    "gd":"gla_Latn",
-    "ga":"gle_Latn",
-    "gl":"glg_Latn",
-    "gn":"grn_Latn",
-    "gu":"guj_Gujr",
-    "ht":"hat_Latn",
-    "ha":"hau_Latn",
-    "he":"heb_Hebr",
-    "hi":"hin_Deva",
-    "hr":"hrv_Latn",
-    "hu":"hun_Latn",
-    "hy":"hye_Armn",
-    "nl":"nld_Latn",
-    "ig":"ibo_Latn",
-    "ilo":"ilo_Latn",
-    "id":"ind_Latn",
-    "is":"isl_Latn",
-    "it":"ita_Latn",
-    "jv":"jav_Latn",
-    "ja":"jpn_Jpan",
-    "kn":"kan_Knda",
-    "ka":"kat_Geor",
-    "kk":"kaz_Cyrl",
-    "km":"khm_Khmr",
-    "rw":"kin_Latn",
-    "ko":"kor_Hang",
-    "ku":"kmr_Latn",
-    "lo":"lao_Laoo",
-    "lv":"lvs_Latn",
-    "ln":"lin_Latn",
-    "lt":"lit_Latn",
-    "lb":"ltz_Latn",
-    "lg":"lug_Latn",
-    "lus":"lus_Latn",
-    "mai":"mai_Deva",
-    "ml":"mal_Mlym",
-    "mr":"mar_Deva",
-    "mk":"mkd_Cyrl",
-    "mg":"plt_Latn",
-    "mt":"mlt_Latn",
-    "mni-Mtei":"mni_Beng",
-    "mni":"mni_Beng",
-    "mn":"khk_Cyrl",
-    "mi":"mri_Latn",
-    "ms":"zsm_Latn",
-    "my":"mya_Mymr",
-    "no":"nno_Latn",
-    "ne":"npi_Deva",
-    "ny":"nya_Latn",
-    "om":"gaz_Latn",
-    "or":"ory_Orya",
-    "pl":"pol_Latn",
-    "pt":"por_Latn",
-    "ps":"pbt_Arab",
-    "qu":"quy_Latn",
-    "ro":"ron_Latn",
-    "ru":"rus_Cyrl",
-    "sa":"san_Deva",
-    "si":"sin_Sinh",
-    "sk":"slk_Latn",
-    "sl":"slv_Latn",
-    "sm":"smo_Latn",
-    "sn":"sna_Latn",
-    "sd":"snd_Arab",
-    "so":"som_Latn",
-    "es":"spa_Latn",
-    "sq":"als_Latn",
-    "sr":"srp_Cyrl",
-    "su":"sun_Latn",
-    "sv":"swe_Latn",
-    "sw":"swh_Latn",
-    "ta":"tam_Taml",
-    "te":"tel_Telu",
-    "tg":"tgk_Cyrl",
-    "tl":"tgl_Latn",
-    "th":"tha_Thai",
-    "ti":"tir_Ethi",
-    "ts":"tso_Latn",
-    "tk":"tuk_Latn",
-    "tr":"tur_Latn",
-    "ug":"uig_Arab",
-    "uk":"ukr_Cyrl",
-    "ur":"urd_Arab",
-    "uz":"uzn_Latn",
-    "vi":"vie_Latn",
-    "xh":"xho_Latn",
-    "yi":"ydd_Hebr",
-    "yo":"yor_Latn",
-    "zh-CN":"zho_Hans",
-    "zh":"zho_Hans",
-    "zh-TW":"zho_Hant",
-    "zu":"zul_Latn",
-    "pa":"pan_Guru"
+# The list is ordered according to lang_codes found on OPUS
+# Some dialects and scripts listed in flores200 have not been mapped due to lack of resource on OPUS
+nllb_langs = { #Name found on opus as comments, if [] other known alias, () several charsets
+    "ace":"ace_Latn", #Achinese
+    "af":"afr_Latn", #Afrikaans
+    "ak":"aka_Latn", #Akan
+    "am":"amh_Ethi", #Amharic
+    "ar":"arb_Arab", #Arabic
+    "as":"asm_Beng", #Assamese
+    "ast":"ast_Latn", #Asturian
+    "ay":"ayr_Latn", #Aymara
+    "az":"azj_Latn", #Azerbaijani (Latin)
+    "azb":"azb_Arab", #Azerbaijani (Arabic)
+    "ba":"bak_Cyrl", #Bashkir
+    "bm":"bam_Latn", #Bambara
+    "ban":"ban_Latn", #Balinese
+    "be":"bel_Cyrl", #Belarusian
+    "bem":"bem_Latn", #Bemba
+    "bn":"ben_Beng", #Bangla [Bengalese]
+    "bho":"bho_Deva", #Bhojpuri [Bihari]
+    "bjn":"bjn_Latn", #Banjar
+    "bo":"bod_Tibt", #Tibetan
+    "bs":"bos_Latn", #Bosnian
+    "bug":"bug_Latn", #Buginese
+    "bg":"bul_Cyrl", #Bulgarian
+    "ca":"cat_Latn", #Catalan
+    "ceb":"ceb_Latn", #Cebuano
+    "cs":"ces_Latn", #Czech
+    "cjk":"cjk_Latn", #Chokwe
+    "ckb":"ckb_Arab", #Central Kurdish [Sorani], no NLLB resource
+    "crh":"crh_Latn", #Crimean Tatar
+    "cy":"cym_Latn", #Welsh
+    "da":"dan_Latn", #Danish
+    "de":"deu_Latn", #German
+    "dik":"dik_Latn", #Dinka
+    "dyu":"dyu_Latn", #Dyula
+    "dz":"dzo_Tibt", #Dzongkha
+    "el":"ell_Grek", #Greek
+    "en":"eng_Latn", #English
+    "eo":"epo_Latn", #Esperanto
+    "es":"spa_Latn", #Spanish
+    "et":"est_Latn", #Estonian
+    "eu":"eus_Latn", #Basque
+    "ee":"ewe_Latn", #Ewe
+    "fa":"pes_Arab", #Persian
+    "fi":"fin_Latn", #Finnish
+    "ff":"fuv_Latn", #Fula [Nigerian Fulfulde]
+    "fj":"fij_Latn", #Fijian
+    "fo":"fao_Latn", #Faroese
+    "fon":"fon_Latn", #Fon
+    "fr":"fra_Latn", #French
+    "fur":"fur_Latn", #Friulian
+    "gd":"gla_Latn", #Scottish Gaelic
+    "ga":"gle_Latn", #Irish
+    "gl":"glg_Latn", #Galician
+    "gn":"grn_Latn", #Guarani
+    "gu":"guj_Gujr", #Gujarati
+    "ht":"hat_Latn", #Haitian Creole
+    "ha":"hau_Latn", #Hausa
+    "he":"heb_Hebr", #Hebrew
+    "hi":"hin_Deva", #Hindi
+    "hne":"hne_Deva", #Chhattishgarhi
+    "hr":"hrv_Latn", #Croatian
+    "hu":"hun_Latn", #Hungarian
+    "hy":"hye_Armn", #Armenian
+    "ig":"ibo_Latn", #Igbo
+    "ilo":"ilo_Latn", #Iloko [Ilocano]
+    "id":"ind_Latn", #Indonesian
+    "is":"isl_Latn", #Icelandic
+    "it":"ita_Latn", #Italian
+    "jv":"jav_Latn", #Javanese
+    "ja":"jpn_Jpan", #Japanese
+    "kn":"kan_Knda", #Kannada
+    "ka":"kat_Geor", #Georgian [Kartvelian]
+    "kab":"kab_latn", #Kabyle [Berber/Tamazight] (Latin)
+    "kac":"kac_Latn", #Kachin
+    "kam":"kam_Latn", #Kamba
+    "kbp":"kbp_Latn", #Kabiye
+    "kea":"kea_Latn", #Kabuverdianu
+    "kg":"kon_Latn", #Kongo
+    "ki":"kik_Latn", #Kikuyu
+    "kk":"kaz_Cyrl", #Kazakh
+    "km":"khm_Khmr", #Khmer
+    "kmb":"kmb_Latn", #Kimbundu
+    "ko":"kor_Hang", #Korean
+    "ks-Arab":"kas_Arab", #Kashmiri (Arabic)
+    "ks-Deva":"kas_Deva", #Kashmiri (Devanagari)
+    "kr-Arab":"knc_Arab", #Kanuri (Arabic)
+    "kr-Latn":"knc_Latn", #Kanuri (Latin)
+    "ku":"kmr_Latn", #Kurdish [Kurmandji], small corpora, NLLB resource under "ku-Latn"
+    "ku-Latn":"kmr_Latn", #Kurdish, NLLB resource in ku-en (also NLLB ku-ar in kmr_Arab under ku-Arab)
+    "ky":"kir_Cyrl", #Kyrgyz
+    "lb":"ltz_Latn", #Luxembourgish
+    "lg":"lug_Latn", #Ganda
+    "li":"lim_Latn", #Limburgish
+    "lij":"lij_Latn", #Ligurian
+    "lmo":"lmo_Latn", #Lombard
+    "ln":"lin_Latn", #Lingala
+    "lo":"lao_Laoo", #Laotian
+    "lt":"lit_Latn", #Lithuanian
+    "ltg":"ltg_Latn", #Latgalian
+    "lua":"lua_Latn", #Luba-Lulua
+    "luo":"luo_Latn", #Luo
+    "lus":"lus_Latn", #Mizo
+    "lv":"lvs_Latn", #Latvian
+    "mag":"mag_Deva", #Magahi
+    "mai":"mai_Deva", #Maithili
+    "min-Arab":"min_Arab", #Minangkabau (Arabic), no NLLB resource
+    "min":"min_Latn", #Minangkabau
+    "mg":"plt_Latn", #Malagasy
+    "mi":"mri_Latn", #Maori
+    "mk":"mkd_Cyrl", #Macedonian
+    "ml":"mal_Mlym", #Malayalam
+    "mn":"khk_Cyrl", #Mongolian
+    "mni":"mni_Beng", #Manipuri
+    "mos": "mos_Latn", #Mossi
+    "mr":"mar_Deva", #Marathi
+    "ms":"zsm_Latn", #Malay
+    "mt":"mlt_Latn", #Maltese
+    "my":"mya_Mymr", #Burmese
+    "nb":"nob_Latn", #Norwegian Bokmål, PAracrawl/HPLT/ELRC resources
+    "ne":"npi_Deva", #Nepalese
+    "nl":"nld_Latn", #Dutch
+    "nn":"nno_Latn", #Norwegian Nynorsk, no NLLB resource
+    "no":"nob_Latn", #Norwegian [Bokmål]
+    "nso":"nso_Latn", #Northern Sotho
+    "nus":"nus_Latn", #Nuer
+    "ny":"nya_Latn", #Nyanja [Chichewa]
+    "oc":"oci_Latn", #Occitan
+    "om":"gaz_Latn", #Oromo
+    "or":"ory_Orya", #Odia [Oriya/Odiya]
+    "pag":"pag_Latn", #Pangasinan
+    "pa":"pan_Guru", #Panjabi
+    "pap":"pap_Latn", #Papiamento
+    "pl":"pol_Latn", #Polish
+    "prs":"prs_Arab", #Dari
+    "ps":"pbt_Arab", #Pashto
+    "pt":"por_Latn", #Portuguese
+    "qu":"quy_Latn", #Quechua
+    "rn":"run_Latn", #Rundi [Kirundi]
+    "ro":"ron_Latn", #Romanian
+    "ru":"rus_Cyrl", #Russian
+    "rw":"kin_Latn", #Kinyarwanda
+    "sa":"san_Deva", #Sanskrit
+    "sat":"sat_Olck", #Santali
+    "sc":"srd_Latn", #Sardinian
+    "scn":"scn_Latn", #Sicilian
+    "sd":"snd_Arab", #Sindhi
+    "sg":"sag_Latn", #Sango
+    "shn":"shn_Mymr", #Shan
+    "si":"sin_Sinh", #Sinhalese
+    "sk":"slk_Latn", #Slovak
+    "sl":"slv_Latn", #Slovenian
+    "sm":"smo_Latn", #Samoan
+    "sn":"sna_Latn", #Shona
+    "so":"som_Latn", #Somali
+    "sq":"als_Latn", #Albanian
+    "sr":"srp_Cyrl", #Serbian
+    "ss":"ssw_Latn", #Swati [siSwati]
+    "st":"sot_Latn", #Sotho [seSotho]
+    "su":"sun_Latn", #Sundanese
+    "sv":"swe_Latn", #Swedish
+    "sw":"swh_Latn", #Swahili
+    "szl":"szl_Latn", #Silesian
+    "ta":"tam_Taml", #Tamil
+    "taq":"taq_Latn", #Tamasheq [Tuareg]
+    "te":"tel_Telu", #Telugu
+    "tg":"tgk_Cyrl", #Tajik
+    "th":"tha_Thai", #Thai
+    "ti":"tir_Ethi", #Tigrinya
+    "tk":"tuk_Latn", #Turkmen
+    "tl":"tgl_Latn", #Filipino [Tagalog]
+    "tn":"tsn_Latn", #Tswana
+    "tpi":"tpi_Latn", #Tok Pisin
+    "tr":"tur_Latn", #Turkish
+    "ts":"tso_Latn", #Tsonga
+    "tt":"tat_Cyrl", #Tatar
+    "tum":"tum_Latn", #Tumbuka
+    "tw":"twi_Latn", #Twi/Akan
+    "tzm":"tzm_Tfng", #Central Atlas Tamazight (Tifinagh)
+    "ug":"uig_Arab", #Uighur
+    "uk":"ukr_Cyrl", #Ukrainian
+    "umb":"umb_Latn", #Umbundu [Kimbundu]
+    "ur":"urd_Arab", #Urdu
+    "uz":"uzn_Latn", #Uzbek
+    "vec":"vec_Latn", #Venetian
+    "vi":"vie_Latn", #Vietnamese
+    "war":"war_Latn", #Waray
+    "wo":"wol_Latn", #Wolof
+    "xh":"xho_Latn", #Xhosa
+    "yi":"ydd_Hebr", #Yiddish
+    "yo":"yor_Latn", #Yoruba
+    "yue":"yue_Hant", #Yue chinese [Cantonese], no NLLB resource
+    "zh-CN":"zho_Hans", #Chinese (Simplified), no NLLB resource
+    "zh":"zho_Hans", #Chinese (Simplified)
+    "zh-TW":"zho_Hant", #Chinese (Traditional)
+    "zu":"zul_Latn" #Zulu
 }
 
 def count_lines(file):
@@ -168,31 +240,33 @@ def sources_changed(sources, out_dir):
     return True
 
 def get_flores_dataset_path(dataset="dev"):
-    if dataset != "dev" and dataset != "devtest":
-        print(f"Invalid dataset {dataset} (must be either dev or devtest)")
-        exit(1)
+    # Swap the definitions to allow looking for translation memoirs
     current_dir = os.path.dirname(__file__)
-    cache_dir = os.path.join(current_dir, "cache")
+    utils_dir = os.path.join(current_dir, "utils")
+    flores_dataset = os.path.join(utils_dir, "flores200_dataset", dataset)
 
-    flores_dataset = os.path.join(cache_dir, "flores200_dataset", dataset)
+    if dataset != "dev" and dataset != "devtest" and not os.path.isdir(flores_dataset):
+        print(f"Invalid dataset {dataset} (must be either dev, devtest), or a valid translation memoir.")
+        exit(1)
+
     if not os.path.isdir(flores_dataset):
-        os.makedirs(cache_dir, exist_ok=True)
+        os.makedirs(utils_dir, exist_ok=True)
     
         # Download first
         print("Downloading flores200 dataset...")
-        fname = os.path.join(cache_dir, "flores200.tar.gz")
+        fname = os.path.join(utils_dir, "flores200.tar.gz")
         flores_url = "https://tinyurl.com/flores200dataset"
-        download(flores_url, cache_dir, basename=os.path.basename(fname))
+        download(flores_url, utils_dir, basename=os.path.basename(fname))
 
         import tarfile
         with tarfile.open(fname) as f:
-            f.extractall(cache_dir)
+            f.extractall(utils_dir)
         
         if os.path.isfile(fname):
             os.unlink(fname)
 
         if not os.path.isdir(flores_dataset):
-            print(f"Cannot download flores200. Please manually download it from {flores_url} and place it in {cache_dir}")
+            print(f"Cannot download flores200. Please manually download it from {flores_url} and place it in {utils_dir}")
             exit(1)
 
     return flores_dataset
@@ -205,7 +279,9 @@ def get_flores_file_path(lang_code, dataset="dev"):
 def get_flores(lang_code, dataset="dev"):
     flores_dataset = get_flores_dataset_path(dataset)
     source = os.path.join(flores_dataset, nllb_langs[lang_code] + f".{dataset}")
-
+    if not os.path.isfile(source) and dataset != "dev" and dataset != "devtest":
+        print(f"The memoir version for {lang_code} is missing or should be renamed {nllb_langs[lang_code]}.{dataset}")
+        exit(1)
     vs = [line.rstrip('\n') for line in open(source, encoding="utf-8")]
     return vs
 
@@ -235,10 +311,23 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         if os.path.isfile(f):
             os.unlink(f)
 
+    fasttext_path = None
+    for s in sources:
+        for f in sources[s]['filters']:
+            if f == "fast_lang":
+                fasttext_path = os.path.join(os.path.dirname(__file__),"utils","fasttext","lid.176.bin")
+    if fasttext_path is not None:
+        import fasttext
+        flmodel = fasttext.load_model(fasttext_path)
+
     def process_source(k):
         nonlocal total_count
         source = sources[k]['source']
+        src_lang = sources[k]['from']
+        src_chset = nllb_langs[src_lang][-4:]
         target = sources[k]['target']
+        tgt_lang = sources[k]['to']
+        tgt_chset = nllb_langs[tgt_lang][-4:]
         if sources[k]['weight'] is not None:
             return
         
@@ -252,11 +341,22 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
                 def get_func(name):
                     kwargs = dict(f[name])
                     func = getattr(filter_funcs, name)
+                    if name == 'limit_latin_chars':
+                        kwargs = {"s_chset": src_chset, "t_chset": tgt_chset, **kwargs}
                     lam = lambda src, tgt: func(src, tgt, **kwargs)
                     lam.__name__ = name
                     lam.__args__ = kwargs
                     return lam 
                 filters.append(get_func(func_name))
+            elif f == "fast_lang":
+                def fastlang_func():
+                    kwargs = {"s_lang": src_lang, "t_lang": tgt_lang, "model": flmodel}
+                    func = getattr(filter_funcs, "fast_lang")
+                    lam = lambda src, tgt: func(src, tgt, **kwargs)
+                    lam.__name__ = "fast_lang"
+                    lam.__args__ = kwargs
+                    return lam
+                filters.append(fastlang_func())
             else:
                 filters.append(getattr(filter_funcs, f))
         
@@ -373,7 +473,7 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     def write_lines():
         with open(os.path.join(out_dir, "src.txt"), "w", encoding="utf-8") as src, \
              open(os.path.join(out_dir, "tgt.txt"), "w", encoding="utf-8") as tgt:
-             while True:
+            while True:
                 count = len(lines)
                 if count > 0:
                     sbuf = StringIO()
@@ -401,6 +501,46 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     finished = True
     writer.join()
 
+    #Use hashes of lines to sort duplicates for memory and compute efficiency
+    def hash_line(line):
+        return hashlib.md5(line.encode('utf-8')).hexdigest()
+
+    # Find duplicates (common hashes in both files)
+    def deduplicate(source, target):
+        source_dir = os.path.dirname(source)
+
+        with open(source, 'r+b') as src_fp, open(target, 'r+b') as tgt_fp, \
+                open(os.path.join(source_dir, "dedupsrc.txt"), 'w', encoding="utf-8") as dsc_fp, \
+                open(os.path.join(source_dir, "deduptgt.txt"), 'w', encoding="utf-8") as dtg_fp:
+
+            src_mm = mmap.mmap(src_fp.fileno(), 0)
+            tgt_mm = mmap.mmap(tgt_fp.fileno(), 0)
+            src_it = iter(src_mm.readline, b'')
+            tgt_it = iter(tgt_mm.readline, b'')
+            read = set()
+            duplicount = 0
+
+            for src_line in src_it:
+                line_s = src_line.decode("utf-8").strip()
+                line_t = next(tgt_it).decode("utf-8").strip()
+                hash_tuple = (hash_line(line_s), hash_line(line_t))
+
+                if hash_tuple in read:
+                    duplicount += 1
+                else:
+                    read.add(hash_tuple)
+                    dsc_fp.write(line_s + '\n')
+                    dtg_fp.write(line_t + '\n')
+            src_mm.close()
+            tgt_mm.close()
+        os.unlink(source)
+        os.unlink(target)
+        os.rename(os.path.join(source_dir, "dedupsrc.txt"), source)
+        os.rename(os.path.join(source_dir, "deduptgt.txt"), target)
+        return(source, target, duplicount)
+
+
+
     if total_count * 0.2 < max_eval_sentences:
         max_eval_sentences = total_count * 0.2
     max_eval_sentences = int(max_eval_sentences)
@@ -409,7 +549,13 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
         print("No sources merged")
         return
 
-    print(f"Training size: {total_count - max_eval_sentences}")
+    if remove_duplicates:
+        print("Removing duplicates")
+        src, tgt, removed = deduplicate(os.path.join(out_dir, "src.txt"), os.path.join(out_dir, "tgt.txt"))
+        print(f"Removed {removed} lines")
+    else: removed = 0
+
+    print(f"Training size: {total_count - removed - max_eval_sentences}")
     print(f"Validation size: {max_eval_sentences}")
 
     print("Writing shuffled sets")
@@ -420,15 +566,6 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     os.rename(tgt, tgt_train)
     os.rename(src_sample, os.path.join(out_dir, "src-val.txt"))
     os.rename(tgt_sample, os.path.join(out_dir, "tgt-val.txt"))
-    
-    if remove_duplicates:
-        print("Removing duplicates")
-        src, tgt, removed = rdup(src_train, tgt_train)
-        print(f"Removed {removed} lines")
-        os.unlink(src_train)
-        os.unlink(tgt_train)
-        os.rename(src, src_train)
-        os.rename(tgt, tgt_train)
 
     os.unlink(os.path.join(out_dir, "src.txt"))
     os.unlink(os.path.join(out_dir, "tgt.txt"))

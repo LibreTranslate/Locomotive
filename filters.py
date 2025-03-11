@@ -116,4 +116,30 @@ def first_char_mismatch(src, tgt):
         return True
     else:
         return src[0] != tgt[0]
-    
+
+def fast_lang(src, tgt, s_lang, t_lang, model):
+    """
+    Removes lines when the languages detected using fasttext language identification differ from those specified in config.
+    """
+    return s_lang != model.predict(src)[0][0].replace("__label__", '') or \
+       t_lang != model.predict(tgt)[0][0].replace("__label__", '')
+
+def limit_latin_chars(src, tgt, s_chset, t_chset, max = 12):
+    """
+    Removes lines with more than "max" latin characters when language uses other alphabet.
+    Max = 12 retains most named entities and acronyms.
+    For emails, reinject filtered data with max value at 20-30
+    """
+    def latin_char_count(sent):
+        count = 0
+        latin_set = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        for ch in sent:
+            if ch in latin_set:
+                count +=1
+        return count
+    if s_chset != "Latn":
+        return latin_char_count(src) > max
+    elif t_chset != "Latn":
+        return latin_char_count(tgt) > max
+    else:
+        return False
