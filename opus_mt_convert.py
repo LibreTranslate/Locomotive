@@ -89,7 +89,7 @@ if not model_url:
     model_url = matches[1]
 
 print(f"Model URL: {model_url}")
-version = "1.0"
+version = "1.9"
 
 print(f"{src_lang_name} --> {tgt_lang_name} ({version})")
 
