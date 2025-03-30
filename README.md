@@ -210,6 +210,17 @@ You can also compute [BLEU](https://en.wikipedia.org/wiki/BLEU) scores against t
 python eval.py --config config.json --bleu
 BLEU score: 45.12354
 ```
+You can also compute [COMET-22](https://github.com/Unbabel/COMET) scores against the [flores200](https://github.com/facebookresearch/flores/blob/main/flores200/README.md) dataset for the model by running:
+```bash
+python eval.py --config config.json --comet --bleu
+Fetching 5 files: 100%|██████████████████████████████████████████████████████████████████████████| 5/5 [00:00<?, ?it/s]
+....\pytorch_lightning\core\saving.py:195: Found keys that are not in the model state dict but in the checkpoint: ['encoder.model.embeddings.position_ids']
+....\flores200devtest-.....evl score: 0.8003
+BLEU score: 27.44794
+```
+You can also install further COMET models [AfriCOMET](https://github.com/masakhane-io/africomet) and update the script to use them.
+
+<mark>Unzip the necessary Argos package(s) to the "utils" directory before using arg --pivot to evaluate a composite translation</mark> (i.e. to or from a third language).
 
 ## Convert Helsinki-NLP OPUS MT models
 
