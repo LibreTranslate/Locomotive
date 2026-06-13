@@ -205,7 +205,9 @@ stanza_remap = {
     "bn": "hi",
     "ms": "en",
     "tl": "en",
-    "pb": "pt"
+    "pb": "pt",
+    "br": "en",
+    "ber": "en"
 }
 if stanza_lang_code in stanza_remap:
     remapped = stanza_lang_code
