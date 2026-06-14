@@ -207,7 +207,8 @@ stanza_remap = {
     "tl": "en",
     "pb": "pt",
     "br": "en",
-    "ber": "en"
+    "ber": "en",
+    "sw": "en",
 }
 if stanza_lang_code in stanza_remap:
     remapped = stanza_lang_code
@@ -217,7 +218,7 @@ if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
     while True:
         try:
             os.makedirs(stanza_dir, exist_ok=True)
-            stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
+            stanza.download(stanza_lang_code, model_dir=stanza_dir, processors="tokenize")
             break
         except Exception as e:
             print(f'Cannot download stanza model: {str(e)}')

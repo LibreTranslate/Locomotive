@@ -199,15 +199,49 @@ for k in sources:
     print(f" - {k} (hash:{sources[k]['hash'][:7]})")
 
 stanza_lang_code = config['from']['code']
+
+remapped = False
+stanza_remap = {
+    "zt": "zh-hant",
+    "sq": "hy",
+    "hr": "hy",
+    "sr": "hy",
+    "bn": "hi",
+    "ms": "en",
+    "tl": "en",
+    "pb": "pt",
+    "br": "en",
+    "ber": "en",
+    "sw": "en",
+}
+
+if stanza_lang_code in stanza_remap:
+    remapped = stanza_lang_code
+    stanza_lang_code = stanza_remap[stanza_lang_code]
+
+
 if not os.path.isdir(os.path.join(stanza_dir, stanza_lang_code)):
     while True:
         try:
             os.makedirs(stanza_dir, exist_ok=True)
-            stanza.download(stanza_lang_code, dir=stanza_dir, processors="tokenize")
+            stanza.download(stanza_lang_code, model_dir=stanza_dir, processors="tokenize")
             break
         except Exception as e:
             print(f'Cannot download stanza model: {str(e)}')
             exit(1)
+
+if remapped:
+    resources_file = os.path.join(stanza_dir, "resources.json")
+    with open(resources_file, "r", encoding="utf-8") as f:
+        resources = json.loads(f.read())
+
+    if not remapped in resources:
+        resources[remapped] = {"alias": stanza_lang_code}
+        with open(resources_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps(resources, indent=4))
+            print(f"Wrote {resources_file}")
+    else:
+        print("Warn: lang code already in stanza model")
 
 all_weighted = sum([1 for k in sources if sources[k]['weight'] is not None]) == len(sources)
 if all_weighted:
@@ -235,7 +269,7 @@ if not os.path.isfile(sp_model_path) or changed:
         except Exception as e:
             err = str(e)
             if "Vocabulary size too high" in err:
-                matches = re.match(".*Please set it to a value <= (\d+)", err)
+                matches = re.match(r".*Please set it to a value <= (\d+)", err)
                 if matches is not None:
                     config["vocab_size"] = int(matches.group(1))
                     print(f"WARNING: vocabulary size too high, reducing to {matches.group(1)}")
@@ -383,7 +417,7 @@ if not os.path.isfile(onmt_vocab_file):
 last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
 def get_checkpoints():
     chkpts = [cp for cp in glob.glob(os.path.join(onmt_dir, "*.pt")) if "averaged.pt" not in cp]
-    return list(sorted(chkpts, key=lambda x: int(re.findall('\d+', x)[0])))
+    return list(sorted(chkpts, key=lambda x: int(re.findall(r'\d+', x)[0])))
 
 if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.rerun_onmt:
     cmd = ["onmt_train", "-config", onmt_config_path]
