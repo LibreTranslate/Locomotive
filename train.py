@@ -287,7 +287,7 @@ corpora = {
     'valid': {
         'path_src': f'{rel_run_dir}/src-val.txt',
         'path_tgt': f'{rel_run_dir}/tgt-val.txt', 
-        'transforms': transforms
+        'transforms': ['sentencepiece']
     }
 }
 if has_merged:
@@ -379,6 +379,7 @@ onmt_config = {
     'share_decoder_embeddings': True,
     'share_embeddings': True,
     'valid_metrics': ['BLEU'],
+    'self_attn_type': 'scaled-dot'
 }
 
 no_gpu = ctranslate2.get_cuda_device_count() == 0
