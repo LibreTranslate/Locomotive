@@ -254,9 +254,9 @@ def get_flores_dataset_path(dataset="dev"):
         # Download first
         print("Downloading flores200 dataset...")
         fname = os.path.join(cache_dir, "flores200.tar.gz")
-        flores_url = "https://tinyurl.com/flores200dataset"
+        flores_url = "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz"
         download(flores_url, cache_dir, basename=os.path.basename(fname))
-
+        
         import tarfile
         with tarfile.open(fname) as f:
             f.extractall(cache_dir)
