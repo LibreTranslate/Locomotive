@@ -100,8 +100,7 @@ def translate_flores():
     return tra_f
 
 data = translator()
-
-if args.bleu or args.flores_id or args.translate_flores or args.comet is not None:
+if args.bleu or args.flores_id or args.translate_flores or args.comet:
     if args.flores_dataset:
         dataset = args.flores_dataset
     src_text = get_flores(config["from"]["code"], dataset)

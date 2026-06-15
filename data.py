@@ -474,6 +474,18 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     finished = True
     writer.join()
 
+    src_txt = os.path.join(out_dir, "src.txt")
+    tgt_txt =  os.path.join(out_dir, "tgt.txt")
+
+    if remove_duplicates:
+        print("Removing duplicates")
+        src_dedup, tgt_dedup, removed = rdup(src_txt, tgt_txt)
+        print(f"Removed {removed} lines")
+        os.unlink(src_txt)
+        os.unlink(tgt_txt)
+        os.rename(src_dedup, src_txt)
+        os.rename(tgt_dedup, tgt_txt)
+
     if total_count * 0.2 < max_eval_sentences:
         max_eval_sentences = total_count * 0.2
     max_eval_sentences = int(max_eval_sentences)
@@ -488,22 +500,13 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     print("Writing shuffled sets")
     os.makedirs(out_dir, exist_ok=True)
 
-    src, tgt, src_sample, tgt_sample = file_shuffle_sample(os.path.join(out_dir, "src.txt"), os.path.join(out_dir, "tgt.txt"), max_eval_sentences)
+    src, tgt, src_sample, tgt_sample = file_shuffle_sample(src_txt, tgt_txt, max_eval_sentences)
     os.rename(src, src_train)
     os.rename(tgt, tgt_train)
     os.rename(src_sample, os.path.join(out_dir, "src-val.txt"))
     os.rename(tgt_sample, os.path.join(out_dir, "tgt-val.txt"))
-    
-    if remove_duplicates:
-        print("Removing duplicates")
-        src, tgt, removed = rdup(src_train, tgt_train)
-        print(f"Removed {removed} lines")
-        os.unlink(src_train)
-        os.unlink(tgt_train)
-        os.rename(src, src_train)
-        os.rename(tgt, tgt_train)
 
-    os.unlink(os.path.join(out_dir, "src.txt"))
-    os.unlink(os.path.join(out_dir, "tgt.txt"))
+    os.unlink(src_txt)
+    os.unlink(tgt_txt)
 
     return True
