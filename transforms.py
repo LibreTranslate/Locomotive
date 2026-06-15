@@ -58,3 +58,11 @@ def first_case_normalize(src, tgt):
             tgt = tgt[0].lower() + tgt[1:]
     
     return src, tgt
+
+def recode_html_escape_chars(src, tgt):
+    """
+    Recode html escape characters (for opus://UNPC corpora)
+    """
+    import html
+    src = html.unescape(src)
+    tgt = html.unescape(tgt)
