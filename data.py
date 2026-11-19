@@ -469,10 +469,16 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
 
     # for s in sources:
     #     process_source(s)
-    with ThreadPoolExecutor() as executor:
-        executor.map(process_source, list(sources.keys()))    
-    finished = True
-    writer.join()
+    try:
+        with ThreadPoolExecutor() as executor:
+            list(executor.map(process_source, list(sources.keys())))
+    except Exception:
+        # Forget the sources hash so the next run merges again
+        os.unlink(os.path.join(out_dir, "merge-hash.txt"))
+        raise
+    finally:
+        finished = True
+        writer.join()
 
     src_txt = os.path.join(out_dir, "src.txt")
     tgt_txt =  os.path.join(out_dir, "tgt.txt")
