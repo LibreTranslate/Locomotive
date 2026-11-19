@@ -295,6 +295,41 @@ def extract_flores_val(src_code, tgt_code, out_dir, dataset="dev"):
             f.write("\n".join(tgt_val) + "\n")
         print(f"Wrote {tgt_f}")
     
+def sanitize_corpus(src, tgt, out_dir):
+    """OpenNMT-py aborts training when it reaches a line that is not valid UTF-8
+    or contains U+FFE8 (its feature separator). If such pairs exist, write a copy
+    without them to out_dir and return its paths, else return the input paths."""
+    def is_bad(line):
+        try:
+            return '\uffe8' in line.decode('utf-8')
+        except UnicodeDecodeError:
+            return True
+
+    def pairs():
+        with open(src, 'rb') as fs, open(tgt, 'rb') as ft:
+            yield from zip(fs, ft)
+
+    print(f"Checking {src} - {tgt}")
+    bad, first_bad = 0, []
+    for n, (s, t) in enumerate(pairs(), 1):
+        if is_bad(s) or is_bad(t):
+            bad += 1
+            if len(first_bad) < 10:
+                first_bad.append(n)
+    if not bad:
+        return src, tgt
+
+    name = hashlib.md5(f"{src}|{tgt}".encode('utf-8')).hexdigest()[:8]
+    out_src = os.path.join(out_dir, f"sanitized-{name}.src")
+    out_tgt = os.path.join(out_dir, f"sanitized-{name}.tgt")
+    with open(out_src, 'wb') as fs, open(out_tgt, 'wb') as ft:
+        for s, t in pairs():
+            if not (is_bad(s) or is_bad(t)):
+                fs.write(s)
+                ft.write(t)
+    print(f"Skipped {bad} pairs with invalid UTF-8 or U+FFE8 (first at lines {first_bad}), training on {out_src}")
+    return out_src, out_tgt
+
 def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=True):
     if not sources_changed(sources, out_dir):
         return False

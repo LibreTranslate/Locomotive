@@ -15,7 +15,7 @@ import zipfile
 import ctranslate2
 from opus import get_opus_dataset_url
 from net import download
-from data import sources_changed, merge_shuffle, extract_flores_val
+from data import sources_changed, merge_shuffle, extract_flores_val, sanitize_corpus
 import sentencepiece as spm
 from onmt_tools import average_models, sp_vocab_to_onmt_vocab
 
@@ -401,6 +401,12 @@ for k in onmt_config:
     if k in config:
         onmt_config[k] = config[k]
 
+last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
+train_needed = (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.rerun_onmt
+if train_needed:
+    for c in corpora.values():
+        c['path_src'], c['path_tgt'] = sanitize_corpus(c['path_src'], c['path_tgt'], run_dir)
+
 onmt_config_path = os.path.join(run_dir, "config.yml")
 with open(onmt_config_path, "w", encoding="utf-8") as f:
     f.write(yaml.dump(onmt_config))
@@ -415,12 +421,11 @@ if not os.path.isfile(onmt_vocab_file):
     #subprocess.run(["onmt_build_vocab", "-config", onmt_config_path, "-n_sample", "-1", "-num_threads", str(os.cpu_count())])
     sp_vocab_to_onmt_vocab(sp_vocab_file, onmt_vocab_file)
 
-last_checkpoint = os.path.join(onmt_dir, os.path.basename(onmt_config["save_model"]) + f'_step_{onmt_config["train_steps"]}.pt')
 def get_checkpoints():
     chkpts = [cp for cp in glob.glob(os.path.join(onmt_dir, "*.pt")) if "averaged.pt" not in cp]
     return list(sorted(chkpts, key=lambda x: int(re.findall(r'\d+', x)[0])))
 
-if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.rerun_onmt:
+if train_needed:
     cmd = ["onmt_train", "-config", onmt_config_path]
 
     if args.rerun_onmt:
