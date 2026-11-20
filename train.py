@@ -455,7 +455,10 @@ if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.r
         print(f"Resuming from {checkpoints[-1]}")
         cmd += ["--train_from", checkpoints[-1]]
 
-    subprocess.run(cmd)
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print(f"onmt_train failed (exit code {result.returncode}), not packaging. Re-run to resume, or use --inflight to package the existing checkpoints.")
+        exit(1)
 
 # Average
 average_checkpoint = os.path.join(run_dir, "averaged.pt")
@@ -486,7 +489,7 @@ if os.path.isdir(ct2_model_dir):
     shutil.rmtree(ct2_model_dir)
 
 print("Converting to ctranslate2")
-subprocess.run([
+result = subprocess.run([
         "ct2-opennmt-py-converter",
         "--model_path",
         average_checkpoint,
@@ -494,6 +497,9 @@ subprocess.run([
         ct2_model_dir,
         "--quantization",
         "int8"])
+if result.returncode != 0:
+    print(f"ct2-opennmt-py-converter failed (exit code {result.returncode})")
+    exit(1)
 
 # Create .argosmodel package
 package_slug = f"translate-{config['from']['code']}_{config['to']['code']}-{config['version'].replace('.', '_')}"
