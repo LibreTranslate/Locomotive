@@ -474,6 +474,10 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     finished = True
     writer.join()
 
+    if total_count == 0:
+        print("No sources merged")
+        return True
+
     src_txt = os.path.join(out_dir, "src.txt")
     tgt_txt =  os.path.join(out_dir, "tgt.txt")
 
@@ -489,10 +493,6 @@ def merge_shuffle(sources, out_dir, max_eval_sentences=5000, remove_duplicates=T
     if total_count * 0.2 < max_eval_sentences:
         max_eval_sentences = total_count * 0.2
     max_eval_sentences = int(max_eval_sentences)
-
-    if total_count == 0:
-        print("No sources merged")
-        return
 
     print(f"Training size: {total_count - max_eval_sentences}")
     print(f"Validation size: {max_eval_sentences}")
