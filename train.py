@@ -423,7 +423,7 @@ def get_checkpoints():
 if (not (os.path.isfile(last_checkpoint) or args.inflight)) or changed or args.rerun_onmt:
     cmd = ["onmt_train", "-config", onmt_config_path]
 
-    if args.rerun_onmt:
+    if args.rerun_onmt or changed:
         delete_checkpoints = glob.glob(os.path.join(onmt_dir, "*.pt"))
         for dc in delete_checkpoints:
             os.unlink(dc)
